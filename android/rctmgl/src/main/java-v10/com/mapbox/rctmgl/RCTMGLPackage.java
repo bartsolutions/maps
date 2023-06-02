@@ -59,7 +59,7 @@ public class RCTMGLPackage implements ReactPackage {
         modules.add(new RCTMGLLocationModule(reactApplicationContext));
 
         modules.add(new RCTMGLOfflineModule(reactApplicationContext));
-        modules.add(new RCTMGLNavigationModule(reactApplicationContext));
+        modules.add(RCTMGLNavigationModule.getInstance(reactApplicationContext));
         modules.add(new RCTMGLSnapshotModule(reactApplicationContext));
 
         modules.add(new RCTMGLLogging(reactApplicationContext));

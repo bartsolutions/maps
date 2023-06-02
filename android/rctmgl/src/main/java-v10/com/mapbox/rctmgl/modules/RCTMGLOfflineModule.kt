@@ -11,9 +11,6 @@ import com.mapbox.bindgen.Value
 import com.mapbox.common.*
 import com.mapbox.geojson.*
 import com.mapbox.maps.*
-import com.mapbox.navigation.base.options.NavigationOptions
-import com.mapbox.navigation.base.options.RoutingTilesOptions
-import com.mapbox.navigation.core.MapboxNavigation
 import com.mapbox.rctmgl.events.IEvent
 import com.mapbox.rctmgl.events.OfflineEvent
 import com.mapbox.rctmgl.events.constants.EventTypes
@@ -103,29 +100,27 @@ class RCTMGLOfflineModule(private val mReactContext: ReactApplicationContext) :
 
 
     val tileStore: TileStore by lazy {
-        TileStore.create()
+        TileStore.create().also {
+            // Set default access token for the created tile store instance
+            it.setOption(
+                TileStoreOptions.MAPBOX_ACCESS_TOKEN,
+                TileDataDomain.MAPS,
+                Value(RCTMGLModule.getAccessToken(mReactContext))
+            )
+            it.setOption(
+                TileStoreOptions.MAPBOX_ACCESS_TOKEN,
+                TileDataDomain.NAVIGATION,
+                Value(RCTMGLModule.getAccessToken(mReactContext))
+            )
+        }
+    }
+
+    private val resourceOptions: ResourceOptions by lazy {
+        ResourceOptions.Builder().applyDefaultParams(mReactContext).tileStore(tileStore).accessToken(RCTMGLModule.getAccessToken(mReactContext)).build()
     }
 
     val offlineManager: OfflineManager by lazy {
-        OfflineManager(
-            ResourceOptions.Builder()
-                .accessToken(RCTMGLModule.getAccessToken(mReactContext)).tileStore(
-                    tileStore
-                ).build()
-        )
-    }
-
-    private val mapboxNavigation: MapboxNavigation by lazy {
-        val routingTilesOptions = RoutingTilesOptions.Builder()
-            .tileStore(tileStore)
-            .build()
-
-        val navOptions = NavigationOptions.Builder(mReactContext)
-            .accessToken(RCTMGLModule.getAccessToken(mReactContext))
-            .routingTilesOptions(routingTilesOptions)
-            .build()
-
-        MapboxNavigation(navOptions)
+        OfflineManager(resourceOptions)
     }
 
     override fun getName(): String {
@@ -313,8 +308,8 @@ class RCTMGLOfflineModule(private val mReactContext: ReactApplicationContext) :
             .pixelRatio(2.0f)
             .build()
         val tilesetDescriptor = offlineManager.createTilesetDescriptor(descriptorOptions)
+        val mapboxNavigation = RCTMGLNavigationModule.getInstance(mReactContext).mapboxNavigation
         val navTilesetDescriptor = mapboxNavigation.tilesetDescriptorFactory.getLatest()
-
         val loadOptions = TileRegionLoadOptions.Builder()
             .geometry(bounds)
             .descriptors(arrayListOf(tilesetDescriptor, navTilesetDescriptor))

@@ -1,5 +1,6 @@
 def defaultMapboxMapsImpl = "maplibre"
 def defaultMapboxMapsVersion = "10.13.0"
+def defaultMapboxNavigationVersion = "2.13.0"
 
 def safeExtGet(prop, fallback) {
     rootProject.ext.has(prop) ? rootProject.ext.get(prop) : fallback
@@ -138,6 +139,7 @@ dependencies {
         }
         else if (safeExtGet("RNMapboxMapsImpl", defaultMapboxMapsImpl) == "mapbox") {
             implementation "com.mapbox.maps:android:${safeExtGet("RNMapboxMapsVersion", defaultMapboxMapsVersion)}"
+            implementation "com.mapbox.navigation:android:${safeExtGet("RNMapboxNavigationVersion", defaultMapboxNavigationVersion)}"
             implementation 'com.mapbox.mapboxsdk:mapbox-sdk-turf:6.11.0'
             implementation 'androidx.asynclayoutinflater:asynclayoutinflater:1.0.0'
         }

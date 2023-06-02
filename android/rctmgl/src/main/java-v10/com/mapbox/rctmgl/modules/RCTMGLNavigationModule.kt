@@ -1,6 +1,7 @@
 package com.mapbox.rctmgl.modules
 
 import com.facebook.react.bridge.Arguments
+import com.facebook.react.bridge.LifecycleEventListener
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
@@ -26,7 +27,7 @@ import com.mapbox.navigation.base.route.RouterOrigin
 import com.mapbox.navigation.core.MapboxNavigation
 import org.json.JSONException
 
-class RCTMGLNavigationModule(mReactContext: ReactApplicationContext) :
+class RCTMGLNavigationModule private constructor(private val mReactContext: ReactApplicationContext) :
     ReactContextBaseJavaModule(mReactContext) {
 
     override fun getName(): String {
@@ -59,21 +60,18 @@ class RCTMGLNavigationModule(mReactContext: ReactApplicationContext) :
             )
         }
     }
-    private val mapboxNavigation: MapboxNavigation by lazy {
+
+     val mapboxNavigation: MapboxNavigation by lazy {
         val routingTilesOptions = RoutingTilesOptions.Builder()
             .tileStore(tileStore)
             .build()
 
-        val navOptions = NavigationOptions.Builder(mReactContext)
+        var navOptions = NavigationOptions.Builder(mReactContext)
             .accessToken(RCTMGLModule.getAccessToken(mReactContext))
             .routingTilesOptions(routingTilesOptions)
             .build()
 
         MapboxNavigation(navOptions)
-    }
-
-    override fun invalidate() {
-        mapboxNavigation.onDestroy()
     }
 
     @ReactMethod
@@ -134,5 +132,14 @@ class RCTMGLNavigationModule(mReactContext: ReactApplicationContext) :
     companion object {
         const val REACT_CLASS = "RCTMGLNavigationModule"
         const val LOG_TAG = REACT_CLASS
+        private var instance: RCTMGLNavigationModule? = null
+
+        @JvmStatic
+        fun getInstance(reactContext: ReactApplicationContext): RCTMGLNavigationModule {
+            if (instance == null) {
+                instance = RCTMGLNavigationModule(reactContext)
+            }
+            return instance as RCTMGLNavigationModule
+        }
     }
 }
