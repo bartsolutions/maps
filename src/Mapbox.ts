@@ -41,6 +41,7 @@ export {
   default as offlineManager,
   OfflineCreatePackOptions,
 } from './modules/offline/offlineManager';
+export { default as navigationManager } from './modules/navigation/navigationManager';
 export {
   default as snapshotManager,
   type SnapshotOptions,

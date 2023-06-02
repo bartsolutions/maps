@@ -45,6 +45,7 @@ import com.mapbox.rctmgl.modules.RCTMGLLogging;
 import com.mapbox.rctmgl.modules.RCTMGLOfflineModule;
 import com.mapbox.rctmgl.modules.RCTMGLSnapshotModule;
 import com.mapbox.rctmgl.modules.RCTMGLLocationModule;
+import com.mapbox.rctmgl.modules.RCTMGLNavigationModule;
 
 import com.mapbox.rctmgl.modules.RCTMGLModule;
 
@@ -58,6 +59,7 @@ public class RCTMGLPackage implements ReactPackage {
         modules.add(new RCTMGLLocationModule(reactApplicationContext));
 
         modules.add(new RCTMGLOfflineModule(reactApplicationContext));
+        modules.add(new RCTMGLNavigationModule(reactApplicationContext));
         modules.add(new RCTMGLSnapshotModule(reactApplicationContext));
 
         modules.add(new RCTMGLLogging(reactApplicationContext));

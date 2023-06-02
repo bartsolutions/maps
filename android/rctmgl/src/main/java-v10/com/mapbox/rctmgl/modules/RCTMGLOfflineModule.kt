@@ -11,6 +11,9 @@ import com.mapbox.bindgen.Value
 import com.mapbox.common.*
 import com.mapbox.geojson.*
 import com.mapbox.maps.*
+import com.mapbox.navigation.base.options.NavigationOptions
+import com.mapbox.navigation.base.options.RoutingTilesOptions
+import com.mapbox.navigation.core.MapboxNavigation
 import com.mapbox.rctmgl.events.IEvent
 import com.mapbox.rctmgl.events.OfflineEvent
 import com.mapbox.rctmgl.events.constants.EventTypes
@@ -110,6 +113,19 @@ class RCTMGLOfflineModule(private val mReactContext: ReactApplicationContext) :
                     tileStore
                 ).build()
         )
+    }
+
+    private val mapboxNavigation: MapboxNavigation by lazy {
+        val routingTilesOptions = RoutingTilesOptions.Builder()
+            .tileStore(tileStore)
+            .build()
+
+        val navOptions = NavigationOptions.Builder(mReactContext)
+            .accessToken(RCTMGLModule.getAccessToken(mReactContext))
+            .routingTilesOptions(routingTilesOptions)
+            .build()
+
+        MapboxNavigation(navOptions)
     }
 
     override fun getName(): String {
@@ -297,10 +313,11 @@ class RCTMGLOfflineModule(private val mReactContext: ReactApplicationContext) :
             .pixelRatio(2.0f)
             .build()
         val tilesetDescriptor = offlineManager.createTilesetDescriptor(descriptorOptions)
+        val navTilesetDescriptor = mapboxNavigation.tilesetDescriptorFactory.getLatest()
 
         val loadOptions = TileRegionLoadOptions.Builder()
             .geometry(bounds)
-            .descriptors(arrayListOf(tilesetDescriptor))
+            .descriptors(arrayListOf(tilesetDescriptor, navTilesetDescriptor))
             .metadata(metadata.toMapboxValue())
             .acceptExpired(true)
             .networkRestriction(NetworkRestriction.NONE)
