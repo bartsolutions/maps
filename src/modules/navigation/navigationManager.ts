@@ -1,6 +1,6 @@
 import { NativeModules, Platform } from 'react-native';
 
-const { RCTMGLNavigationModule } = NativeModules;
+const { MGLNavigationModule } = NativeModules;
 
 /**
  * NavigationManager implements a asynchronous calculateRoute method to find best route between
@@ -31,13 +31,13 @@ class NavigationManager {
     destination: [number, number],
   ): Promise<GeoJSON.FeatureCollection | null> {
     if (Platform.OS !== 'android') {
+      console.warn('calculateRoute only support Android');
       return null;
     }
 
     await this._initialize();
-
     const geoJson: GeoJSON.FeatureCollection =
-      await RCTMGLNavigationModule.calculateRoute(origin, destination);
+      await MGLNavigationModule.calculateRoute(origin, destination);
     return geoJson;
   }
 
