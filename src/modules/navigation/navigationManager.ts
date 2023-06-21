@@ -36,8 +36,9 @@ class NavigationManager {
     }
 
     await this._initialize();
-    const geoJson: GeoJSON.FeatureCollection =
+    const { geoJson: jsonPayload }: { geoJson: string } =
       await MGLNavigationModule.calculateRoute(origin, destination);
+    const geoJson: GeoJSON.FeatureCollection = JSON.parse(jsonPayload);
     return geoJson;
   }
 
