@@ -21,6 +21,11 @@ class RCTMGLCameraChanged : RCTMGLEvent, RCTEvent {
     return newEvent
   }
 
+  @objc
+  var coalescingKey: UInt16 {
+    return 0;
+  }
+
   static func moduleDotMethod() -> String! {
     "RCTEventEmitter.receiveEvent"
   }
@@ -335,7 +340,12 @@ open class RCTMGLMapView : MapView {
     self.styleLoaded = false
     if let value = value {
       if let _ = URL(string: value) {
-        mapView.mapboxMap.loadStyleURI(StyleURI(rawValue: value)!)
+          if let styleURI = StyleURI(rawValue: value) {
+              mapView.mapboxMap.loadStyleURI(styleURI)
+          } else {
+              let event = RCTMGLEvent(type:.mapLoadingError, payload: ["error": "invalid URI: \(value)"]);
+              self.fireEvent(event: event, callback: self.reactOnMapChange)
+          }
       } else {
         if RCTJSONParse(value, nil) != nil {
           mapView.mapboxMap.loadStyleJSON(value)
