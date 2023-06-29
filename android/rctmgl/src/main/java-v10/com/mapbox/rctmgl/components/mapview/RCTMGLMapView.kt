@@ -62,9 +62,9 @@ import com.mapbox.rctmgl.components.styles.light.RCTMGLLight
 import com.mapbox.rctmgl.components.styles.sources.RCTSource
 import com.mapbox.rctmgl.components.styles.terrain.RCTMGLTerrain
 import com.mapbox.rctmgl.events.AndroidCallbackEvent
+import com.mapbox.rctmgl.events.CameraChangeEvent
 import com.mapbox.rctmgl.events.IEvent
 import com.mapbox.rctmgl.events.MapChangeEvent
-import com.mapbox.rctmgl.events.CameraChangeEvent
 import com.mapbox.rctmgl.events.MapClickEvent
 import com.mapbox.rctmgl.events.constants.EventTypes
 import com.mapbox.rctmgl.utils.*
@@ -558,7 +558,8 @@ open class RCTMGLMapView(private val mContext: Context, var mManager: RCTMGLMapV
     fun applyLocalizeLabels() {
         val localeStr = mLocaleString
         if (localeStr != null) {
-            val locale = if (localeStr == "current") Locale.getDefault() else Locale(localeStr)
+            val locale = if (localeStr == "current") Locale.getDefault() else Locale.Builder()
+                .setLanguageTag(localeStr).build()
             savedStyle?.localizeLabels(locale, mLocaleLayerIds)
         }
     }
