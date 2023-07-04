@@ -1,13 +1,15 @@
 package com.mapbox.rctmgl.modules
 
 import com.facebook.react.bridge.Arguments
-import com.facebook.react.bridge.LifecycleEventListener
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
 import com.facebook.react.bridge.ReadableArray
+import com.facebook.react.bridge.WritableMap
+import com.facebook.react.bridge.WritableNativeMap
 import com.mapbox.api.directions.v5.DirectionsCriteria
+import com.mapbox.api.directions.v5.models.DirectionsWaypoint
 import com.mapbox.api.directions.v5.models.RouteOptions
 import com.mapbox.bindgen.Value
 import com.mapbox.common.TileDataDomain
@@ -26,6 +28,7 @@ import com.mapbox.navigation.base.route.RouterFailure
 import com.mapbox.navigation.base.route.RouterOrigin
 import com.mapbox.navigation.core.MapboxNavigation
 import org.json.JSONException
+
 
 class RCTMGLNavigationModule private constructor(private val mReactContext: ReactApplicationContext) :
     ReactContextBaseJavaModule(mReactContext) {
@@ -76,19 +79,20 @@ class RCTMGLNavigationModule private constructor(private val mReactContext: Reac
 
     @ReactMethod
     @Throws(JSONException::class)
-    fun calculateRoute(origin: ReadableArray, destination: ReadableArray, promise: Promise)
+    fun calculateRoute(readableArray: ReadableArray, promise: Promise)
     {
-        val originLatitude = origin.getDouble(0)
-        val originLongitude = origin.getDouble(1)
-        val destinationLatitude = destination.getDouble(0)
-        val destinationLongitude = destination.getDouble(1)
+        val waypoints = ArrayList<Point>()
 
-        val originPoint = Point.fromLngLat(originLongitude, originLatitude)
-        val destinationPoint = Point.fromLngLat(destinationLongitude, destinationLatitude)
-
+        for (i in 0 until readableArray.size()) {
+            val coordinateArray: ReadableArray = readableArray.getArray(i)
+            val latitude = coordinateArray.getDouble(0)
+            val longitude = coordinateArray.getDouble(1)
+            val waypoint: Point = Point.fromLngLat(longitude, latitude)
+            waypoints.add(waypoint)
+        }
         val routeOptions = RouteOptions.builder()
             .applyDefaultNavigationOptions()
-            .coordinatesList(listOf(originPoint, destinationPoint))
+            .coordinatesList(waypoints)
             .profile(DirectionsCriteria.PROFILE_WALKING)
             .build()
         try {

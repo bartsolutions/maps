@@ -6552,22 +6552,16 @@
         "description": "Calcuate a route using the available NavigationRouter implementation. (Online or Offline)",
         "params": [
           {
-            "name": "origin",
-            "description": "origin options GPS location.",
+            "name": "waypoints",
+            "description": "GPS location.",
             "type": {
-              "name": ""
+              "name": "Array"
             },
             "optional": false
-          },
-          {
-            "name": "destination",
-            "description": "destination GPS location.",
-            "type": {},
-            "optional": true
           }
         ],
         "examples": [
-          "const origin = [22.3528619, 114.1869509]\nconst destination = [22.3522368, 114.1893649]\nawait Mapbox.navigationManager.calculateRoute(origin, destination)"
+          "const waypoints = GeoJSON.Point[]\nawait Mapbox.navigationManager.calculateRoute(waypoints)"
         ],
         "returns": {
           "description": "",

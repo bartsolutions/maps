@@ -18,26 +18,25 @@ class NavigationManager {
    *
    * @example
    *
-   * const origin = [22.3528619, 114.1869509]
-   * const destination = [22.3522368, 114.1893649]
-   * await Mapbox.navigationManager.calculateRoute(origin, destination)
+   * const waypoints = GeoJSON.Point[]
+   * await Mapbox.navigationManager.calculateRoute(waypoints)
    *
-   * @param  {[number, number]} origin origin options GPS location.
-   * @param  {[number, number]=} destination destination GPS location.
+   * @param  {GeoJSON.Point[]} waypoints  GPS location.
    * @return {GeoJSON.FeatureCollection}
    */
   async calculateRoute(
-    origin: [number, number],
-    destination: [number, number],
+    waypoints: GeoJSON.Point[],
   ): Promise<GeoJSON.FeatureCollection | null> {
     if (Platform.OS !== 'android') {
       console.warn('calculateRoute only support Android');
       return null;
     }
 
+    const points = waypoints.map((point) => point.coordinates);
+
     await this._initialize();
     const { geoJson: jsonPayload }: { geoJson: string } =
-      await MGLNavigationModule.calculateRoute(origin, destination);
+      await MGLNavigationModule.calculateRoute(points);
     const geoJson: GeoJSON.FeatureCollection = JSON.parse(jsonPayload);
     return geoJson;
   }
