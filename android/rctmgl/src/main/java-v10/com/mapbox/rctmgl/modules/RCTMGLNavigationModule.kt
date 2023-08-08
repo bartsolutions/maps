@@ -85,8 +85,8 @@ class RCTMGLNavigationModule private constructor(private val mReactContext: Reac
 
         for (i in 0 until readableArray.size()) {
             val coordinateArray: ReadableArray = readableArray.getArray(i)
-            val latitude = coordinateArray.getDouble(0)
-            val longitude = coordinateArray.getDouble(1)
+            val longitude = coordinateArray.getDouble(0)
+            val latitude = coordinateArray.getDouble(1)
             val waypoint: Point = Point.fromLngLat(longitude, latitude)
             waypoints.add(waypoint)
         }
