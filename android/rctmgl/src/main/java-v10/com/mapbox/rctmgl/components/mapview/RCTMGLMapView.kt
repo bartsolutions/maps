@@ -22,6 +22,7 @@ import com.mapbox.geojson.Point
 import com.mapbox.maps.*
 import com.mapbox.maps.extension.localization.localizeLabels
 import com.mapbox.maps.extension.observable.eventdata.MapLoadingErrorEventData
+import com.mapbox.maps.extension.observable.eventdata.RenderFrameFinishedEventData
 import com.mapbox.maps.extension.observable.getMapLoadingErrorEventData
 import com.mapbox.maps.extension.style.expressions.generated.Expression
 import com.mapbox.maps.extension.style.layers.Layer
@@ -273,6 +274,16 @@ open class RCTMGLMapView(private val mContext: Context, var mManager: RCTMGLMapV
         addFeaturesToMap()
         applyLocalizeLabels()
         style.setProjection(Projection(mProjection))
+    }
+
+    private fun setupEvents() {
+       mMap?.addOnRenderFrameFinishedListener(
+           object: OnRenderFrameFinishedListener {
+               override fun onRenderFrameFinished(eventData: RenderFrameFinishedEventData) {
+                   handleMapChangedEvent(EventTypes.DID_FINISH_RENDERING_FRAME_FULLY)
+               }
+           }
+       )
     }
 
     private fun onMapReady(map: MapboxMap) {
@@ -1116,6 +1127,7 @@ open class RCTMGLMapView(private val mContext: Context, var mManager: RCTMGLMapV
 
         val _this = this
         mMap.addOnMapLoadedListener(OnMapLoadedListener { (begin, end) -> _this.handleMapChangedEvent(EventTypes.DID_FINISH_LOADING_MAP) })
+        mMap.addOnStyleLoadedListener(OnStyleLoadedListener { (begin, end) -> _this.handleMapChangedEvent(EventTypes.DID_FINISH_LOADING_STYLE) })
         mMap.addOnStyleImageMissingListener(OnStyleImageMissingListener { (begin, end, id) ->
             for (images in mImages) {
                 if (images.addMissingImageToStyle(id, mMap)) {
@@ -1130,6 +1142,7 @@ open class RCTMGLMapView(private val mContext: Context, var mManager: RCTMGLMapV
         RCTMGLMarkerViewManager.markerViewContainerSizeFixer(this, mapView.viewAnnotationManager)
 
         this.addOnLayoutChangeListener(this)
+        this.setupEvents()
     }
 
     // region Ornaments

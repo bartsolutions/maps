@@ -1,5 +1,7 @@
 // Runs eslint on the code example in the issue body and posts a comment with the lint results.
 
+const fs = require('fs');
+
 const core = require('@actions/core');
 const github = require('@actions/github');
 const { ESLint } = require('eslint');
@@ -32,6 +34,7 @@ const Config = {
     env: {
       browser: true,
       es2021: true,
+      node: true,
     },
     extends: 'plugin:react/recommended',
     overrides: [],
@@ -44,7 +47,7 @@ const Config = {
         version: '17.0.2',
       },
     },
-    plugins: ['react', 'eslint-plugin-import'],
+    plugins: ['react', 'eslint-plugin-import', 'eslint-plugin-node'],
     rules: {
       'import/prefer-default-export': ['error'],
       'no-undef': 'error',
@@ -63,6 +66,16 @@ const Config = {
             },
           ],
         },
+      ],
+      'node/no-restricted-require': [
+        'error',
+        [
+          {
+            name: ['./**', '../**', '!../assets/example.png'],
+            message:
+              'Repo example should complete - it should not use files from your project, use ../assets/example.png if you need an example image',
+          },
+        ],
       ],
     },
   },
@@ -140,6 +153,10 @@ async function run() {
     const hasErrors = results.some((result) => result.errorCount > 0);
     const formatter = await eslint.loadFormatter('codeframe');
     const message = formatter.format(results);
+    if (process.env.LINT_FILE) {
+      console.log('Lint result:', message);
+      return;
+    }
     await processGithubIssue(issueNumber, message, hasErrors, false);
   } catch (error) {
     core.setFailed(error.message);
@@ -147,6 +164,9 @@ async function run() {
 }
 
 function getIssueNumber() {
+  if (process.env.LINT_FILE) {
+    return 'n/a';
+  }
   const { issue } = github.context.payload;
   if (!issue) {
     throw new Error('Could not find issue in context');
@@ -155,6 +175,16 @@ function getIssueNumber() {
 }
 
 function getCode() {
+  if (process.env.LINT_FILE) {
+    return [
+      fs.readFileSync(process.env.LINT_FILE, 'utf8'),
+      {
+        isTypescript:
+          process.env.LINT_FILE.endsWith('.ts') ||
+          process.env.LINT_FILE.endsWith('.tsx'),
+      },
+    ];
+  }
   const { issue } = github.context.payload;
   if (!issue) {
     throw new Error('Could not find issue in context');
