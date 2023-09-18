@@ -14,6 +14,30 @@ class NavigationManager {
   }
 
   /**
+   * Calcuate geocding
+   *
+   * @example
+   *
+   * const point = GeoJSON.Point
+   * await Mapbox.navigationManager.geocoding(point)
+   *
+   * @param  {GeoJSON.Point} point  GPS location.
+   * @return {string}
+   */
+  async geocoding(point: GeoJSON.Point): Promise<string | null> {
+    if (Platform.OS !== 'android') {
+      console.warn('geocding only support Android');
+      return null;
+    }
+
+    await this._initialize();
+    const { geoJson: jsonPayload }: { geoJson: string } =
+      await MGLNavigationModule.geocoding(point);
+    const { result } = JSON.parse(jsonPayload);
+    return result || null;
+  }
+
+  /**
    * Calcuate a route using the available NavigationRouter implementation. (Online or Offline)
    *
    * @example

@@ -6,15 +6,15 @@ import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
 import com.facebook.react.bridge.ReadableArray
-import com.facebook.react.bridge.WritableMap
-import com.facebook.react.bridge.WritableNativeMap
 import com.mapbox.api.directions.v5.DirectionsCriteria
-import com.mapbox.api.directions.v5.models.DirectionsWaypoint
 import com.mapbox.api.directions.v5.models.RouteOptions
+import com.mapbox.api.geocoding.v5.GeocodingCriteria
+import com.mapbox.api.geocoding.v5.MapboxGeocoding
 import com.mapbox.bindgen.Value
 import com.mapbox.common.TileDataDomain
 import com.mapbox.common.TileStore
 import com.mapbox.common.TileStoreOptions
+import com.mapbox.common.TileStoreOptions.MAPBOX_ACCESS_TOKEN
 import com.mapbox.geojson.Feature
 import com.mapbox.geojson.FeatureCollection
 import com.mapbox.geojson.LineString
@@ -76,6 +76,24 @@ class RCTMGLNavigationModule private constructor(private val mReactContext: Reac
 
         MapboxNavigation(navOptions)
     }
+
+    @ReactMethod
+    @Throws(JSONException::class)
+    fun geocoding(point: ReadableArray, promise: Promise)
+    {
+        val longitude = point.getDouble(0)
+        val latitude = point.getDouble(1)
+        var reverseGeocode = MapboxGeocoding.builder()
+            .accessToken(MAPBOX_ACCESS_TOKEN)
+            .query(Point.fromLngLat(longitude, latitude))
+            .geocodingTypes(GeocodingCriteria.TYPE_ADDRESS)
+            .build()
+
+        val result = Arguments.createMap()
+        result.putString("result", reverseGeocode.toString())
+        promise.resolve(result)
+    }
+
 
     @ReactMethod
     @Throws(JSONException::class)

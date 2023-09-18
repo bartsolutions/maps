@@ -6548,6 +6548,29 @@
     "styles": [],
     "methods": [
       {
+        "name": "geocoding",
+        "description": "Calcuate geocding",
+        "params": [
+          {
+            "name": "point",
+            "description": "GPS location.",
+            "type": {
+              "name": "GeoJSON.Point"
+            },
+            "optional": false
+          }
+        ],
+        "examples": [
+          "const point = GeoJSON.Point\nawait Mapbox.navigationManager.geocoding(point)"
+        ],
+        "returns": {
+          "description": "",
+          "type": {
+            "name": "string"
+          }
+        }
+      },
+      {
         "name": "calculateRoute",
         "description": "Calcuate a route using the available NavigationRouter implementation. (Online or Offline)",
         "params": [

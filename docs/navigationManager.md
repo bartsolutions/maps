@@ -11,6 +11,23 @@ Origin an Destination Point. Will use tile store when offline.
 
 
 ## methods
+### geocoding(point)
+
+Calcuate geocding
+
+#### arguments
+| Name | Type | Required | Description  |
+| ---- | :--: | :------: | :----------: |
+| `point` | `GeoJSON.Point` | `Yes` | GPS location. |
+
+
+
+```javascript
+const point = GeoJSON.Point
+await Mapbox.navigationManager.geocoding(point)
+```
+
+
 ### calculateRoute(waypoints)
 
 Calcuate a route using the available NavigationRouter implementation. (Online or Offline)
