@@ -6555,18 +6555,18 @@
             "name": "point",
             "description": "GPS location.",
             "type": {
-              "name": "GeoJSON.Position"
+              "name": "GeoJSON.Point"
             },
             "optional": false
           }
         ],
         "examples": [
-          "const point = GeoJSON.Position\nawait Mapbox.navigationManager.geocoding(point)"
+          "const point = GeoJSON.Point\nawait Mapbox.navigationManager.geocoding(point)"
         ],
         "returns": {
           "description": "",
           "type": {
-            "name": "string"
+            "name": "GeoJSON.FeatureCollection"
           }
         }
       },

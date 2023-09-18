@@ -10,11 +10,12 @@ import com.mapbox.api.directions.v5.DirectionsCriteria
 import com.mapbox.api.directions.v5.models.RouteOptions
 import com.mapbox.api.geocoding.v5.GeocodingCriteria
 import com.mapbox.api.geocoding.v5.MapboxGeocoding
+import com.mapbox.api.geocoding.v5.models.CarmenFeature
+import com.mapbox.api.geocoding.v5.models.GeocodingResponse
 import com.mapbox.bindgen.Value
 import com.mapbox.common.TileDataDomain
 import com.mapbox.common.TileStore
 import com.mapbox.common.TileStoreOptions
-import com.mapbox.common.TileStoreOptions.MAPBOX_ACCESS_TOKEN
 import com.mapbox.geojson.Feature
 import com.mapbox.geojson.FeatureCollection
 import com.mapbox.geojson.LineString
@@ -27,7 +28,11 @@ import com.mapbox.navigation.base.route.NavigationRouterCallback
 import com.mapbox.navigation.base.route.RouterFailure
 import com.mapbox.navigation.base.route.RouterOrigin
 import com.mapbox.navigation.core.MapboxNavigation
+import com.mapbox.rctmgl.modules.CustomHttpHeaders.onResponse
 import org.json.JSONException
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 
 
 class RCTMGLNavigationModule private constructor(private val mReactContext: ReactApplicationContext) :
@@ -84,14 +89,32 @@ class RCTMGLNavigationModule private constructor(private val mReactContext: Reac
         val longitude = point.getDouble(0)
         val latitude = point.getDouble(1)
         var reverseGeocode = MapboxGeocoding.builder()
-            .accessToken(MAPBOX_ACCESS_TOKEN)
+            .accessToken(RCTMGLModule.getAccessToken(mReactContext))
             .query(Point.fromLngLat(longitude, latitude))
-            .geocodingTypes(GeocodingCriteria.TYPE_ADDRESS)
             .build()
 
-        val result = Arguments.createMap()
-        result.putString("result", reverseGeocode.toString())
-        promise.resolve(result)
+        reverseGeocode.enqueueCall(object : Callback<GeocodingResponse> {
+            override fun onResponse(call: Call<GeocodingResponse>, response: Response<GeocodingResponse>) {
+                if (response.isSuccessful) {
+                    val features: MutableList<Feature> = mutableListOf()
+                    for (carmenFeature in response.body()?.features() ?: emptyList()) {
+                        val feature = Feature.fromGeometry(carmenFeature.geometry())
+                        feature.addStringProperty("place_name", carmenFeature.placeName() ?: "")
+                        // Add any other properties you want to include in the Feature
+                        features.add(feature)
+                    }
+                    val featureCollection = FeatureCollection.fromFeatures(features)
+                    val result = Arguments.createMap()
+                    result.putString("geoJson", featureCollection.toJson())
+                    promise.resolve(result)
+                }
+            }
+
+            override fun onFailure(call: Call<GeocodingResponse>, throwable: Throwable) {
+                // Handle the failure
+                promise.reject("ERROR", throwable)
+            }
+        })
     }
 
 

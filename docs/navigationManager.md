@@ -18,12 +18,12 @@ Calcuate geocding
 #### arguments
 | Name | Type | Required | Description  |
 | ---- | :--: | :------: | :----------: |
-| `point` | `GeoJSON.Position` | `Yes` | GPS location. |
+| `point` | `GeoJSON.Point` | `Yes` | GPS location. |
 
 
 
 ```javascript
-const point = GeoJSON.Position
+const point = GeoJSON.Point
 await Mapbox.navigationManager.geocoding(point)
 ```
 
