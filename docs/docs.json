@@ -6555,13 +6555,13 @@
             "name": "point",
             "description": "GPS location.",
             "type": {
-              "name": "GeoJSON.Point"
+              "name": "GeoJSON.Position"
             },
             "optional": false
           }
         ],
         "examples": [
-          "const point = GeoJSON.Point\nawait Mapbox.navigationManager.geocoding(point)"
+          "const point = GeoJSON.Position\nawait Mapbox.navigationManager.geocoding(point)"
         ],
         "returns": {
           "description": "",

@@ -18,13 +18,13 @@ class NavigationManager {
    *
    * @example
    *
-   * const point = GeoJSON.Point
+   * const point = GeoJSON.Position
    * await Mapbox.navigationManager.geocoding(point)
    *
-   * @param  {GeoJSON.Point} point  GPS location.
+   * @param  {GeoJSON.Position} point  GPS location.
    * @return {string}
    */
-  async geocoding(point: GeoJSON.Point): Promise<string | null> {
+  async geocoding(point: GeoJSON.Position): Promise<string | null> {
     if (Platform.OS !== 'android') {
       console.warn('geocding only support Android');
       return null;
