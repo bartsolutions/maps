@@ -91,6 +91,8 @@ class RCTMGLNavigationModule private constructor(private val mReactContext: Reac
         var reverseGeocode = MapboxGeocoding.builder()
             .accessToken(RCTMGLModule.getAccessToken(mReactContext))
             .query(Point.fromLngLat(longitude, latitude))
+            .geocodingTypes(GeocodingCriteria.TYPE_POI_LANDMARK)
+            .languages("zh")
             .build()
 
         reverseGeocode.enqueueCall(object : Callback<GeocodingResponse> {
@@ -100,6 +102,8 @@ class RCTMGLNavigationModule private constructor(private val mReactContext: Reac
                     for (carmenFeature in response.body()?.features() ?: emptyList()) {
                         val feature = Feature.fromGeometry(carmenFeature.geometry())
                         feature.addStringProperty("place_name", carmenFeature.placeName() ?: "")
+                        feature.addStringProperty("text", carmenFeature.text() ?: "")
+                        feature.addStringProperty("address", carmenFeature.address() ?: "")
                         // Add any other properties you want to include in the Feature
                         features.add(feature)
                     }
