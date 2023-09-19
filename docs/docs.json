@@ -6558,10 +6558,18 @@
               "name": "GeoJSON.Point"
             },
             "optional": false
+          },
+          {
+            "name": "language",
+            "description": "Language.",
+            "type": {
+              "name": "string"
+            },
+            "optional": false
           }
         ],
         "examples": [
-          "const point = GeoJSON.Point\nawait Mapbox.navigationManager.geocoding(point)"
+          "const point = GeoJSON.Point\nconst language = string\nawait Mapbox.navigationManager.geocoding(point, language)"
         ],
         "returns": {
           "description": "",

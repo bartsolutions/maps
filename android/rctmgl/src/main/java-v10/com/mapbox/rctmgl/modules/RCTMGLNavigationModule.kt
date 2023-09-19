@@ -84,7 +84,7 @@ class RCTMGLNavigationModule private constructor(private val mReactContext: Reac
 
     @ReactMethod
     @Throws(JSONException::class)
-    fun geocoding(point: ReadableArray, promise: Promise)
+    fun geocoding(point: ReadableArray, language: String, promise: Promise)
     {
         val longitude = point.getDouble(0)
         val latitude = point.getDouble(1)
@@ -92,7 +92,7 @@ class RCTMGLNavigationModule private constructor(private val mReactContext: Reac
             .accessToken(RCTMGLModule.getAccessToken(mReactContext))
             .query(Point.fromLngLat(longitude, latitude))
             .geocodingTypes(GeocodingCriteria.TYPE_POI_LANDMARK)
-            .languages("zh")
+            .languages(language)
             .build()
 
         reverseGeocode.enqueueCall(object : Callback<GeocodingResponse> {

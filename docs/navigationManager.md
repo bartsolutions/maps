@@ -11,7 +11,7 @@ Origin an Destination Point. Will use tile store when offline.
 
 
 ## methods
-### geocoding(point)
+### geocoding(point, language)
 
 Calcuate geocding
 
@@ -19,12 +19,14 @@ Calcuate geocding
 | Name | Type | Required | Description  |
 | ---- | :--: | :------: | :----------: |
 | `point` | `GeoJSON.Point` | `Yes` | GPS location. |
+| `language` | `string` | `Yes` | Language. |
 
 
 
 ```javascript
 const point = GeoJSON.Point
-await Mapbox.navigationManager.geocoding(point)
+const language = string
+await Mapbox.navigationManager.geocoding(point, language)
 ```
 
 

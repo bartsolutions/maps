@@ -19,13 +19,16 @@ class NavigationManager {
    * @example
    *
    * const point = GeoJSON.Point
-   * await Mapbox.navigationManager.geocoding(point)
+   * const language = string
+   * await Mapbox.navigationManager.geocoding(point, language)
    *
    * @param  {GeoJSON.Point} point  GPS location.
+   * @param  {string} language Language.
    * @return {GeoJSON.FeatureCollection}
    */
   async geocoding(
     point: GeoJSON.Point,
+    language: string,
   ): Promise<GeoJSON.FeatureCollection | null> {
     if (Platform.OS !== 'android') {
       console.warn('geocoding only support Android');
@@ -34,7 +37,7 @@ class NavigationManager {
     const { coordinates } = point;
     await this._initialize();
     const { geoJson: jsonPayload }: { geoJson: string } =
-      await MGLNavigationModule.geocoding(coordinates);
+      await MGLNavigationModule.geocoding(coordinates, language);
 
     const geoJson: GeoJSON.FeatureCollection = JSON.parse(jsonPayload);
     return geoJson;
