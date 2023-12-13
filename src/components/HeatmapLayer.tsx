@@ -1,21 +1,23 @@
 import React from 'react';
-import { NativeModules, requireNativeComponent } from 'react-native';
+import { NativeModules } from 'react-native';
 
 import {
   FilterExpression,
   HeatmapLayerStyleProps,
 } from '../utils/MapboxStyles';
 import { StyleValue } from '../utils/StyleValue';
+import RNMBXHeatmapLayerNativeComponent from '../specs/RNMBXHeatmapLayerNativeComponent';
 
 import AbstractLayer from './AbstractLayer';
 
-const MapboxGL = NativeModules.MGLModule;
+const Mapbox = NativeModules.RNMBXModule;
 
-export const NATIVE_MODULE_NAME = 'RCTMGLHeatmapLayer';
+// @{codepart-replace-start(LayerPropsCommon.codepart-tsx)}
+type Slot = 'bottom' | 'middle' | 'top';
 
-export type Props = {
+type LayerPropsCommon = {
   /**
-   * A string that uniquely identifies the layer in the style to which it is added.
+   * A string that uniquely identifies the source in the style to which it is added.
    */
   id: string;
 
@@ -32,8 +34,7 @@ export type Props = {
   sourceID?: string;
 
   /**
-   * Identifier of the layer within the source identified by the sourceID property
-   * from which the receiver obtains the data to style.
+   * Identifier of the layer within the source identified by the sourceID property from which the receiver obtains the data to style.
    */
   sourceLayerID?: string;
 
@@ -68,6 +69,16 @@ export type Props = {
   maxZoomLevel?: number;
 
   /**
+   * The slot this layer is assigned to. If specified, and a slot with that name exists, it will be placed at that position in the layer order.
+   *
+   * v11 only
+   */
+  slot?: Slot;
+};
+// @{codepart-replace-end}
+
+export type Props = LayerPropsCommon & {
+  /**
    * Customizable style attributes
    */
   style?: HeatmapLayerStyleProps;
@@ -82,7 +93,7 @@ type NativeTypeProps = Omit<Props, 'style'> & {
  */
 class HeatmapLayer extends AbstractLayer<Props, NativeTypeProps> {
   static defaultProps = {
-    sourceID: MapboxGL.StyleSource.DefaultSourceID,
+    sourceID: Mapbox.StyleSource.DefaultSourceID,
   };
 
   render() {
@@ -91,11 +102,11 @@ class HeatmapLayer extends AbstractLayer<Props, NativeTypeProps> {
       ...this.baseProps,
       sourceLayerID: this.props.sourceLayerID,
     };
-    return <RCTMGLHeatmapLayer ref={this.setNativeLayer} {...props} />;
+    return (
+      // @ts-expect-error just codegen stuff
+      <RNMBXHeatmapLayerNativeComponent ref={this.setNativeLayer} {...props} />
+    );
   }
 }
-
-const RCTMGLHeatmapLayer =
-  requireNativeComponent<NativeTypeProps>(NATIVE_MODULE_NAME);
 
 export default HeatmapLayer;

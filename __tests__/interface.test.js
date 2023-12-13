@@ -14,9 +14,15 @@ describe('Public Interface', () => {
       'Callout',
       'Camera',
       'UserLocation',
+      'NativeUserLocation', // deprecated
+      'LocationPuck',
+      'StyleImport',
+      'Viewport',
+      'CustomLocationProvider',
 
       // modules
       'offlineManager',
+      'offlineManagerLegacy',
       'OfflineCreatePackOptions',
       'snapshotManager',
       'locationManager',
@@ -27,6 +33,7 @@ describe('Public Interface', () => {
       'CircleLayer',
       'HeatmapLayer',
       'LineLayer',
+      'ModelLayer',
       'SymbolLayer',
       'BackgroundLayer',
       'RasterLayer',
@@ -42,6 +49,7 @@ describe('Public Interface', () => {
       'RasterDemSource',
       'Images',
       'Image',
+      'Models',
 
       // constants
       'UserTrackingModes', // deprecated
@@ -79,6 +87,7 @@ describe('Public Interface', () => {
 
       // methods
       'setWellKnownTileServer',
+      'clearData',
       'setAccessToken',
       'getAccessToken',
       'setTelemetryEnabled',
@@ -102,6 +111,8 @@ describe('Public Interface', () => {
       // helpers
       'Logger',
       'Style',
+
+      '__experimental',
     ];
     actualKeys.forEach((key) => expect(expectedKeys).toContain(key));
   });

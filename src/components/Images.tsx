@@ -1,15 +1,13 @@
 import React, { ReactNode, ReactElement } from 'react';
-import {
-  requireNativeComponent,
-  Image as RNImage,
-  ImageURISource,
-} from 'react-native';
+import { Image as RNImage, ImageURISource } from 'react-native';
 import { ImageSourcePropType, ImageResolvedAssetSource } from 'react-native';
+
+import RNMBXImagesNativeComponent from '../specs/RNMBXImagesNativeComponent';
 
 import { ShapeSource } from './ShapeSource';
 import Image from './Image';
 
-export const NATIVE_MODULE_NAME = 'RCTMGLImages';
+export const NATIVE_MODULE_NAME = 'RNMBXImages';
 
 export type RNMBEvent<PayloadType = { [key: string]: string }> = {
   payload: PayloadType;
@@ -84,7 +82,7 @@ interface Props {
   /**
    * Specifies the external images in key-value pairs required for the shape source.
    * Keys are names - see iconImage expressions, values can be either urls-s objects
-   * with format {uri: 'http://...'}` or `require('image.png')` or `import 'image.png'`
+   * with format `{uri: 'http://...'}` or `require('image.png')` or `import 'image.png'`
    */
   images?: { [key: string]: ImageEntry };
 
@@ -101,7 +99,6 @@ interface Props {
    */
   onImageMissing?: (imageKey: string) => void;
 
-  id?: string;
   children?: TypedReactNode<typeof Image>;
 }
 
@@ -184,25 +181,18 @@ class Images extends React.PureComponent<Props> {
 
   render() {
     const props = {
-      id: this.props.id,
       hasOnImageMissing: !!this.props.onImageMissing,
       onImageMissing: this._onImageMissing.bind(this),
       ...this._getImages(),
     };
 
-    return <RCTMGLImages {...props}>{this.props.children}</RCTMGLImages>;
+    return (
+      // @ts-expect-error just codegen stuff
+      <RNMBXImagesNativeComponent {...props}>
+        {this.props.children}
+      </RNMBXImagesNativeComponent>
+    );
   }
 }
-
-type NativeProps = {
-  hasOnImageMissing: boolean;
-  onImageMissing?: (event: React.SyntheticEvent<Element, RNMBEvent>) => void;
-  images?: {
-    [key: string]: string | ImageResolvedAssetSource | ResolvedImageEntryData;
-  };
-  nativeImages?: NativeImage[];
-};
-
-const RCTMGLImages = requireNativeComponent<NativeProps>(NATIVE_MODULE_NAME);
 
 export default Images;

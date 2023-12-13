@@ -20,105 +20,68 @@ require 'json'
 package = JSON.parse(File.read(File.join(__dir__, 'package.json')))
 
 ## Warning: these lines are scanned by autogenerate.js
-rnMapboxMapsDefaultMapboxVersion = '~> 10.14.0'
-rnMapboxMapsDefaultMapboxGLVersion = '~> 5.9.0'
-rnMapboxMapsDefaultMapLibreVersion = 'exactVersion 5.12.1'
+rnMapboxMapsDefaultMapboxVersion = '~> 10.16.2'
 
-rnMapboxMapsDefaultImpl = 'maplibre'
+rnMapboxMapsDefaultImpl = 'mapbox'
+
+new_arch_enabled = ENV['RCT_NEW_ARCH_ENABLED'] == '1'
 
 # DEPRECATIONS
 
-
-if ENV["REACT_NATIVE_MAPBOX_GL_USE_FRAMEWORKS"]
-  puts "REACT_NATIVE_MAPBOX_GL_USE_FRAMEWORKS is now deprecated!"
-end
-
 if $RNMBGL_Use_SPM
-  puts "WARNING: $RNMBGL_Use_SPM is deprecated - use $RNMapboxMapsSwiftPackageManager"
-  if $RNMBGL_Use_SPM.is_a?(Hash)
-    $RNMapboxMapsSwiftPackageManager = $RNMBGL_Use_SPM
-  else
-    $RNMapboxMapsImpl = 'maplibre' unless $RNMapboxMapsImpl
-    $RNMapboxMapsSwiftPackageManager = {
-      url: "https://github.com/maplibre/maplibre-gl-native-distribution",
-      requirement: {
-        kind: rnMapboxMapsDefaultMapLibreVersion.split.first,
-        version: rnMapboxMapsDefaultMapLibreVersion.split.last,
-      },
-      product_name: "Mapbox"
-    }
-  end
+  abort "Error: $RNMBGL_Use_SPM is deprecated - use $RNMapboxMapsSwiftPackageManager"
 end
 
 if $RNMBGL_USE_V10
-  puts "WARNING: $RNMBGL_USE_V10 is deprecated - use $RNMapboxMapsImpl = 'mapbox'"
-  $RNMapboxMapsImpl = 'mapbox'
+  abort "Error: $RNMBGL_USE_V10 is deprecated - this is the default now"
 end
 
 if $RNMBGL_USE_MAPLIBRE
-  puts "WARNING: $RNMBGL_USE_MAPLIBRE is deprecated - use $RNMapboxMapsImpl = 'maplibre'"
-  $RNMapboxMapsImpl = 'maplibre'
+  abort "Error: $RNMBGL_USE_MAPLIBRE is deprecated no mapblire is supported"
 end
 
 if ENV.has_key?("REACT_NATIVE_MAPBOX_MAPBOX_IOS_VERSION")
-  puts "WARNING: REACT_NATIVE_MAPBOX_MAPBOX_IOS_VERSION env is deprecated please use `$RNMapboxMapsVersion = \"#{ENV['REACT_NATIVE_MAPBOX_MAPBOX_IOS_VERSION']}\"`"
-  $RNMapboxMapsVersion = ENV["REACT_NATIVE_MAPBOX_MAPBOX_IOS_VERSION"]
+  abort "Error: REACT_NATIVE_MAPBOX_MAPBOX_IOS_VERSION env is deprecated please use `$RNMapboxMapsVersion = \"#{ENV['REACT_NATIVE_MAPBOX_MAPBOX_IOS_VERSION']}\"`"
 end
 
 if $ReactNativeMapboxGLIOSVersion
-  puts "WARNING: $ReactNativeMapboxGLIOSVersion is deprecated use `$RNMapboxMapsVersion = \"#{$ReactNativeMapboxGLIOSVersion}\"`"
-  $RNMapboxMapsVersion = $ReactNativeMapboxGLIOSVersion
+  abort "Error: $ReactNativeMapboxGLIOSVersion is deprecated use we default to mapbox now"
 end
 
 $RNMBGL = Object.new
 
 def $RNMBGL.pre_install(installer)
-  puts "WARNING: $RNMBGL.pre_install is deprecated - use $RNMapboxMaps.pre_install"
-  $RNMapboxMaps.pre_install(installer)
+  abort "WARNING: $RNMBGL.pre_install is removed - use $RNMapboxMaps.pre_install"
 end
 
 def $RNMBGL.post_install(installer)
-  puts "WARNING: $RNMBGL.post_install is deprecated - use $RNMapboxMaps.post_install"
-  $RNMapboxMaps.post_install(installer)
+  abort "WARNING: $RNMBGL.post_install is removed - use $RNMapboxMaps.post_install"
 end
 
 # --
 
-unless $RNMapboxMapsImpl
-  raise "Setting $RNMapboxMapsImpl is now required - https://github.com/rnmapbox/maps/wiki/Deprecated-RNMapboxImpl-Unset#ios"
-end
-# $RNMapboxMapsImpl = rnMapboxMapsDefaultImpl unless $RNMapboxMapsImpl
+$RNMapboxMapsImpl ||= 'mapbox'
 
 case $RNMapboxMapsImpl
 when 'mapbox'
   rnMapboxMapsTargetsToChangeToDynamic = ['MapboxMobileEvents', 'Turf', 'MapboxMaps', 'MapboxCoreMaps', 'MapboxCommon']
   $MapboxImplVersion = $RNMapboxMapsVersion || rnMapboxMapsDefaultMapboxVersion
 when 'mapbox-gl'
-  puts 'WARNING: mapbox-gl in @rnmapbox/maps is deprecated. Set $RNMapboxMapsImpl=mapbox in your Podfile. See https://github.com/rnmapbox/maps/wiki/Deprecated-RNMapboxImpl-Maplibre#ios'
-  rnMapboxMapsTargetsToChangeToDynamic = ['MapboxMobileEvents']
-  $MapboxImplVersion = $RNMapboxMapsVersion || rnMapboxMapsDefaultMapboxGLVersion
+  abort 'Errors: mapbox-gl in @rnmapbox/maps is removed. See https://github.com/rnmapbox/maps/wiki/Deprecated-RNMapboxImpl-Maplibre#ios'
 when 'maplibre'
-  puts 'WARNING: maplibre in @rnmapbox/maps is deprecated. Set $RNMapboxMapsImpl=mapbox in your Podfile. See https://github.com/rnmapbox/maps/wiki/Deprecated-RNMapboxImpl-MapboxGL#ios'
-  rnMapboxMapsTargetsToChangeToDynamic = ['MapboxMobileEvents']
-
-  spm_version = ($RNMapboxMapsVersion || rnMapboxMapsDefaultMapLibreVersion).split
-  if spm_version.length < 2
-    spm_version.prepend('exactVersion')
-  end
-
-  unless $RNMapboxMapsSwiftPackageManager
-    $RNMapboxMapsSwiftPackageManager = {
-      url: "https://github.com/maplibre/maplibre-gl-native-distribution",
-      requirement: {
-        kind: spm_version[0],
-        version: spm_version[1],
-      },
-      product_name: "Mapbox"
-    }
-  end
+  abort 'Error: maplibre in @rnmapbox/maps is removed. See https://github.com/rnmapbox/maps/wiki/Deprecated-RNMapboxImpl-MapboxGL#ios'
 else
-  fail "$RNMapboxMapsImpl should be one of mapbox, mapbox-gl, maplibre"
+  fail "$RNMapboxMapsImpl should be one of mapbox"
 end
+
+if $RNMapboxMapsUseV11 != nil
+  warn "WARNING: $RNMapboxMapsUseV11 is deprecated just set $RNMapboxMapsVersion to '= 11.0.0"
+end
+
+if $MapboxImplVersion =~ /(~>|>=|=|>)?\S*11\./
+  $RNMapboxMapsUseV11 = true
+end
+
 
 $RNMapboxMaps = Object.new
 
@@ -153,7 +116,32 @@ def $RNMapboxMaps._add_spm_to_target(project, target, url, requirement, product_
   end
 end
 
+def $RNMapboxMaps._add_compiler_flags(sp, extra_flags)
+  exisiting_flags = sp.attributes_hash["compiler_flags"]
+  if exisiting_flags.present?
+    sp.compiler_flags = exisiting_flags + " #{extra_flags}"
+  else
+    sp.compiler_flags = extra_flags
+  end
+end
+
+def $RNMapobxMaps._rn_72_or_earlier()
+  rn_version_full = JSON.parse(File.read("node_modules/react-native/package.json"))['version']
+  rn_major_minor = rn_version_full.split('.')[0...2].map(&:to_i)
+  return (rn_major_minor <=> [0,72]) <= 0
+rescue
+  false
+end
+
 def $RNMapboxMaps.post_install(installer)
+  map_pod = installer.pod_targets.find {|p| p.name == "MapboxMaps" }
+  use_v11 = $RNMapboxMapsUseV11 || (map_pod && map_pod.version.split('.')[0].to_i >= 11)
+  if use_v11
+    installer.pods_project.build_configurations.each do |config|
+      config.build_settings['OTHER_SWIFT_FLAGS'] ||= ['$(inherited)', '-D RNMBX_11']
+    end
+  end
+
   if $RNMapboxMapsSwiftPackageManager
     return if $RNMapboxMapsSwiftPackageManager == "manual"
 
@@ -234,7 +222,12 @@ Pod::Spec.new do |s|
   s.homepage    	= "https://github.com/rnmapbox/maps#readme"
   s.source      	= { :git => "https://github.com/rnmapbox/maps.git" }
   s.license     	= "MIT"
-  s.platform    	= :ios, "11.0"
+  if $RNMapboxMapsUseV11
+    s.platform    	= :ios, "13.0"
+  else
+    s.platform    	= :ios, "11.0"
+  end
+  s.header_dir = "rnmapbox_maps"
 
   unless $RNMapboxMapsSwiftPackageManager
     case $RNMapboxMapsImpl
@@ -242,12 +235,8 @@ Pod::Spec.new do |s|
       s.dependency 'MapboxMaps', $MapboxImplVersion
       s.dependency 'Turf'
       s.swift_version = '5.0'
-    when 'mapbox-gl'
-      s.dependency 'Mapbox-iOS-SDK', $MapboxImplVersion
-    when 'maplibre'
-      fail "internal error: maplibre requires $RNMapboxMapsSwiftPackageManager"
     else
-      fail "$RNMapboxMapsImpl should be one of mapbox, mapbox-gl, maplibre"
+      fail "$RNMapboxMapsImpl should be mapbox but was: $RNMapboxMapsImpl"
     end
   end
 
@@ -257,12 +246,22 @@ Pod::Spec.new do |s|
   s.subspec 'DynamicLibrary' do |sp|
     case $RNMapboxMapsImpl
     when 'mapbox'
-      sp.source_files = "ios/RCTMGL-v10/**/*.{h,m,swift}"
-    when 'mapbox-gl'
-      sp.source_files	= "ios/RCTMGL/**/*.{h,m}"
-    when 'maplibre'
-      sp.source_files	= "ios/RCTMGL/**/*.{h,m}"
-      sp.compiler_flags = '-DRNMBGL_USE_MAPLIBRE=1'
+      sp.source_files = "ios/RNMBX/**/*.{h,m,mm,swift}"
+      sp.private_header_files = 'ios/RNMBX/RNMBXFabricHelpers.h', 'ios/RNMBX/RNMBXFabricPropConvert.h', 'ios/RNMBX/rnmapbox_maps-Swift.pre.h'
+      if new_arch_enabled
+        sp.pod_target_xcconfig = { 'DEFINES_MODULE' => 'YES' }
+        install_modules_dependencies(sp)
+        dependencies_only_requiring_modular_headers = ["React-Fabric", "React-graphics", "React-utils", "React-debug", "glog"]
+        sp.dependencies = sp.dependencies.select { |d| !dependencies_only_requiring_modular_headers.include?(d.name) }.map {|d| [d.name, []]}.to_h
+        if $RNMapobxMaps._rn_72_or_earlier()
+          $RNMapboxMaps._add_compiler_flags(sp, "-DRNMBX_RN_72=1")
+        end
+      end
+      if ENV['USE_FRAMEWORKS'] || $RNMapboxMapsUseFrameworks
+        $RNMapboxMaps._add_compiler_flags(sp, "-DRNMBX_USE_FRAMEWORKS=1")
+      end
+    else
+      fail "$RNMapboxMapsImpl should be mapbox but was: $RNMapboxMapsImpl"
     end
   end
 

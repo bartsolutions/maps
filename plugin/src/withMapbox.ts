@@ -5,8 +5,6 @@ import {
   ConfigPlugin,
   createRunOncePlugin,
   withDangerousMod,
-  withXcodeProject,
-  XcodeProject,
   withGradleProperties,
   WarningAggregator,
   withProjectBuildGradle,
@@ -32,14 +30,16 @@ try {
 type InstallerBlockName = 'pre' | 'post';
 
 export type MapboxPlugProps = {
-  RNMapboxMapsImpl?: string;
-
   /**
-   * @platform ios
+   * @deprecated
    */
+  RNMapboxMapsImpl?: 'mapbox';
+
   RNMapboxMapsVersion?: string;
 
   RNMapboxMapsDownloadToken?: string;
+
+  RNMapboxMapsUseV11?: boolean;
 };
 
 export const addInstallerBlock = (
@@ -82,11 +82,16 @@ export const addConstantBlock = (
     RNMapboxMapsImpl,
     RNMapboxMapsVersion,
     RNMapboxMapsDownloadToken,
+    RNMapboxMapsUseV11,
   }: MapboxPlugProps,
 ): string => {
   const tag = `@rnmapbox/maps-rnmapboxmapsimpl`;
 
-  if (RNMapboxMapsImpl == null) {
+  if (
+    RNMapboxMapsVersion == null &&
+    RNMapboxMapsDownloadToken == null &&
+    RNMapboxMapsUseV11 == null
+  ) {
     const modified = removeGeneratedContents(src, tag);
     if (!modified) {
       return src;
@@ -95,13 +100,22 @@ export const addConstantBlock = (
     }
   }
 
-  const newSrc = [
-    `$RNMapboxMapsImpl = '${RNMapboxMapsImpl}'`,
-    `$RNMapboxMapsDownloadToken = '${RNMapboxMapsDownloadToken}'`,
-  ];
+  const newSrc = [];
+
+  if (RNMapboxMapsDownloadToken) {
+    newSrc.push(`$RNMapboxMapsDownloadToken = '${RNMapboxMapsDownloadToken}'`);
+  }
+
+  if (RNMapboxMapsImpl) {
+    newSrc.push(`$RNMapboxMapsImpl = '${RNMapboxMapsImpl}'`);
+  }
 
   if (RNMapboxMapsVersion) {
     newSrc.push(`$RNMapboxMapsVersion = '${RNMapboxMapsVersion}'`);
+  }
+
+  if (RNMapboxMapsUseV11) {
+    newSrc.push(`$RNMapboxMapsUseV11 = true`);
   }
 
   return mergeContents({
@@ -123,6 +137,7 @@ export const applyCocoaPodsModifications = (
     RNMapboxMapsImpl,
     RNMapboxMapsVersion,
     RNMapboxMapsDownloadToken,
+    RNMapboxMapsUseV11,
   }: MapboxPlugProps,
 ): string => {
   // Ensure installer blocks exist
@@ -130,6 +145,7 @@ export const applyCocoaPodsModifications = (
     RNMapboxMapsImpl,
     RNMapboxMapsVersion,
     RNMapboxMapsDownloadToken,
+    RNMapboxMapsUseV11,
   });
   src = addInstallerBlock(src, 'pre');
   src = addInstallerBlock(src, 'post');
@@ -160,7 +176,12 @@ export const addMapboxInstallerBlock = (
  */
 const withCocoaPodsInstallerBlocks: ConfigPlugin<MapboxPlugProps> = (
   config,
-  { RNMapboxMapsImpl, RNMapboxMapsVersion, RNMapboxMapsDownloadToken },
+  {
+    RNMapboxMapsImpl,
+    RNMapboxMapsVersion,
+    RNMapboxMapsDownloadToken,
+    RNMapboxMapsUseV11,
+  },
 ) =>
   withDangerousMod(config, [
     'ios',
@@ -177,6 +198,7 @@ const withCocoaPodsInstallerBlocks: ConfigPlugin<MapboxPlugProps> = (
           RNMapboxMapsImpl,
           RNMapboxMapsVersion,
           RNMapboxMapsDownloadToken,
+          RNMapboxMapsUseV11,
         }),
         'utf-8',
       );
@@ -184,35 +206,6 @@ const withCocoaPodsInstallerBlocks: ConfigPlugin<MapboxPlugProps> = (
       return exportedConfig;
     },
   ]);
-
-/**
- * Exclude building for arm64 on simulator devices in the pbxproj project.
- * Without this, production builds targeting simulators will fail.
- */
-export const setExcludedArchitectures: (
-  project: XcodeProject,
-) => XcodeProject = (project: XcodeProject): XcodeProject => {
-  const configurations: { buildSettings: Record<string, string> }[] =
-    project.pbxXCBuildConfigurationSection();
-  for (const { buildSettings } of Object.values(configurations || {})) {
-    // Guessing that this is the best way to emulate Xcode.
-    // Using `project.addToBuildSettings` modifies too many targets.
-    if (typeof buildSettings?.PRODUCT_NAME !== 'undefined') {
-      buildSettings['"EXCLUDED_ARCHS[sdk=iphonesimulator*]"'] = '"arm64"';
-    }
-  }
-
-  return project;
-};
-
-const withExcludedSimulatorArchitectures: ConfigPlugin = (config) =>
-  withXcodeProject(config, (exportedConfig) => {
-    exportedConfig.modResults = setExcludedArchitectures(
-      exportedConfig.modResults,
-    );
-
-    return exportedConfig;
-  });
 
 const withAndroidPropertiesDownloadToken: ConfigPlugin<MapboxPlugProps> = (
   config,
@@ -240,19 +233,32 @@ const withAndroidPropertiesDownloadToken: ConfigPlugin<MapboxPlugProps> = (
 
 const withAndroidPropertiesImpl2: ConfigPlugin<MapboxPlugProps> = (
   config,
-  { RNMapboxMapsImpl },
+  { RNMapboxMapsImpl, RNMapboxMapsVersion, RNMapboxMapsUseV11 },
 ) => {
-  const key = 'expoRNMapboxMapsImpl';
+  const keyValues = {
+    expoRNMapboxMapsImpl: RNMapboxMapsImpl,
+    expoRNMapboxMapsVersion: RNMapboxMapsVersion,
+    expoRNMapboxMapsUseV11: RNMapboxMapsUseV11,
+  } as const;
+  type Keys = keyof typeof keyValues;
+  const keys = Object.keys(keyValues) as Keys[];
+  const values = Object.values(keyValues);
 
-  if (RNMapboxMapsImpl) {
+  if (values.filter((v) => v).length > 0) {
     return withGradleProperties(config, (exportedConfig) => {
       exportedConfig.modResults = exportedConfig.modResults.filter(
-        (item) => !(item.type === 'property' && item.key === key),
+        (item) =>
+          !(item.type === 'property' && (keys as string[]).includes(item.key)),
       );
-      exportedConfig.modResults.push({
-        type: 'property',
-        key: key,
-        value: RNMapboxMapsImpl,
+      keys.forEach((key) => {
+        const value = keyValues[key];
+        if (value != null) {
+          exportedConfig.modResults.push({
+            type: 'property',
+            key: key,
+            value: value.toString(),
+          });
+        }
       });
 
       return exportedConfig;
@@ -264,13 +270,20 @@ const withAndroidPropertiesImpl2: ConfigPlugin<MapboxPlugProps> = (
 
 const withAndroidProperties: ConfigPlugin<MapboxPlugProps> = (
   config,
-  { RNMapboxMapsImpl, RNMapboxMapsDownloadToken },
+  {
+    RNMapboxMapsImpl,
+    RNMapboxMapsDownloadToken,
+    RNMapboxMapsVersion,
+    RNMapboxMapsUseV11,
+  },
 ) => {
   config = withAndroidPropertiesDownloadToken(config, {
     RNMapboxMapsDownloadToken,
   });
   config = withAndroidPropertiesImpl2(config, {
     RNMapboxMapsImpl,
+    RNMapboxMapsVersion,
+    RNMapboxMapsUseV11,
   });
 
   return config;
@@ -392,11 +405,18 @@ const withAndroidProjectGradle: ConfigPlugin<MapboxPlugProps> = (config) =>
 
 const withMapboxAndroid: ConfigPlugin<MapboxPlugProps> = (
   config,
-  { RNMapboxMapsImpl, RNMapboxMapsDownloadToken },
+  {
+    RNMapboxMapsImpl,
+    RNMapboxMapsDownloadToken,
+    RNMapboxMapsVersion,
+    RNMapboxMapsUseV11,
+  },
 ) => {
   config = withAndroidProperties(config, {
     RNMapboxMapsImpl,
     RNMapboxMapsDownloadToken,
+    RNMapboxMapsVersion,
+    RNMapboxMapsUseV11,
   });
   config = withAndroidProjectGradle(config, { RNMapboxMapsImpl });
   config = withAndroidAppGradle(config, { RNMapboxMapsImpl });
@@ -406,18 +426,24 @@ const withMapboxAndroid: ConfigPlugin<MapboxPlugProps> = (
 
 const withMapbox: ConfigPlugin<MapboxPlugProps> = (
   config,
-  { RNMapboxMapsImpl, RNMapboxMapsVersion, RNMapboxMapsDownloadToken },
+  {
+    RNMapboxMapsImpl,
+    RNMapboxMapsVersion,
+    RNMapboxMapsDownloadToken,
+    RNMapboxMapsUseV11,
+  },
 ) => {
-  config = withExcludedSimulatorArchitectures(config);
   config = withMapboxAndroid(config, {
     RNMapboxMapsImpl,
     RNMapboxMapsVersion,
+    RNMapboxMapsUseV11,
     RNMapboxMapsDownloadToken,
   });
   config = withCocoaPodsInstallerBlocks(config, {
     RNMapboxMapsImpl,
     RNMapboxMapsVersion,
     RNMapboxMapsDownloadToken,
+    RNMapboxMapsUseV11,
   });
 
   return config;

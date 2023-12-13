@@ -1,18 +1,25 @@
 import React from 'react';
-import { View, NativeModules, requireNativeComponent } from 'react-native';
+import { View, NativeModules } from 'react-native';
 
-import { Expression, type SymbolLayerStyleProps } from '../utils/MapboxStyles';
+import {
+  type FilterExpression,
+  type SymbolLayerStyleProps,
+} from '../utils/MapboxStyles';
 import { type StyleValue } from '../utils/StyleValue';
+import RNMBXSymbolLayerNativeComponent from '../specs/RNMBXSymbolLayerNativeComponent';
 
 import AbstractLayer from './AbstractLayer';
 
-const MapboxGL = NativeModules.MGLModule;
+export const NATIVE_MODULE_NAME = 'RNMBXSymbolLayer';
 
-export const NATIVE_MODULE_NAME = 'RCTMGLSymbolLayer';
+const Mapbox = NativeModules.RNMBXModule;
 
-export type Props = {
+// @{codepart-replace-start(LayerPropsCommon.codepart-tsx)}
+type Slot = 'bottom' | 'middle' | 'top';
+
+type LayerPropsCommon = {
   /**
-   * A string that uniquely identifies the layer in the style to which it is added.
+   * A string that uniquely identifies the source in the style to which it is added.
    */
   id: string;
 
@@ -51,7 +58,7 @@ export type Props = {
   /**
    *  Filter only the features in the source layer that satisfy a condition that you define
    */
-  filter?: Expression;
+  filter?: FilterExpression;
 
   /**
    * The minimum zoom level at which the layer gets parsed and appears.
@@ -63,7 +70,20 @@ export type Props = {
    */
   maxZoomLevel?: number;
 
-  style?: SymbolLayerStyleProps;
+  /**
+   * The slot this layer is assigned to. If specified, and a slot with that name exists, it will be placed at that position in the layer order.
+   *
+   * v11 only
+   */
+  slot?: Slot;
+};
+// @{codepart-replace-end}
+
+export type Props = LayerPropsCommon & {
+  /**
+   * Customizable style attributes
+   */
+  style: SymbolLayerStyleProps;
 
   /**
    * @deprecated passed children used to create an image with id of symbol in style and also set the iconImageName property accordingly.
@@ -77,15 +97,12 @@ type NativeTypeProps = Omit<Props, 'style'> & {
   reactStyle?: { [key: string]: StyleValue };
 };
 
-const RCTMGLSymbolLayer =
-  requireNativeComponent<NativeTypeProps>(NATIVE_MODULE_NAME);
-
 /**
  * SymbolLayer is a style layer that renders icon and text labels at points or along lines on the map.
  */
 export class SymbolLayer extends AbstractLayer<Props, NativeTypeProps> {
   static defaultProps = {
-    sourceID: MapboxGL.StyleSource.DefaultSourceID,
+    sourceID: Mapbox.StyleSource.DefaultSourceID,
   };
   deprecationLogged: { snapshot: boolean } = { snapshot: false };
 
@@ -119,9 +136,10 @@ export class SymbolLayer extends AbstractLayer<Props, NativeTypeProps> {
     };
 
     return (
-      <RCTMGLSymbolLayer ref={this.setNativeLayer} {...props}>
+      // @ts-expect-error just codegen stuff
+      <RNMBXSymbolLayerNativeComponent ref={this.setNativeLayer} {...props}>
         {this.props.children}
-      </RCTMGLSymbolLayer>
+      </RNMBXSymbolLayerNativeComponent>
     );
   }
 }

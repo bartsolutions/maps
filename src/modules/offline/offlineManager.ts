@@ -15,9 +15,9 @@ import OfflineCreatePackOptions, {
 } from './OfflineCreatePackOptions';
 import OfflinePack from './OfflinePack';
 
-const { MGLModule } = NativeModules;
+const { RNMBXModule } = NativeModules;
 
-const MapboxOfflineManager = NativeModules.MGLOfflineModule;
+const MapboxOfflineManager = NativeModules.RNMBXOfflineModule;
 export const OfflineModuleEventEmitter = new NativeEventEmitter(
   MapboxOfflineManager,
 );
@@ -183,7 +183,7 @@ class OfflineManager {
    * @return {void}
    */
   async invalidateAmbientCache(): Promise<void> {
-    if (MGLModule.MapboxV10) {
+    if (RNMBXModule.MapboxV10) {
       console.warn(
         'RNMapbox: invalidateAmbientCache is not implemented on v10',
       );
@@ -205,7 +205,7 @@ class OfflineManager {
    * @return {void}
    */
   async clearAmbientCache(): Promise<void> {
-    if (MGLModule.MapboxV10) {
+    if (RNMBXModule.MapboxV10) {
       console.warn('RNMapbox: clearAmbientCache is not implemented on v10');
       return;
     }
@@ -222,7 +222,6 @@ class OfflineManager {
    * @return {void}
    */
   async migrateOfflineCache(): Promise<void> {
-    await this._initialize();
     await MapboxOfflineManager.migrateOfflineCache();
   }
 
@@ -250,8 +249,9 @@ class OfflineManager {
    * @return {void}
    */
   async resetDatabase(): Promise<void> {
-    await this._initialize();
     await MapboxOfflineManager.resetDatabase();
+    this._offlinePacks = {};
+    await this._initialize(true);
   }
 
   /**
@@ -348,7 +348,7 @@ class OfflineManager {
     if (isFunction(progressListener)) {
       if (totalProgressListeners === 0) {
         this.subscriptionProgress = OfflineModuleEventEmitter.addListener(
-          MGLModule.OfflineCallbackName.Progress,
+          RNMBXModule.OfflineCallbackName.Progress,
           this._onProgress,
         );
       }
@@ -359,7 +359,7 @@ class OfflineManager {
     if (isFunction(errorListener)) {
       if (totalErrorListeners === 0) {
         this.subscriptionError = OfflineModuleEventEmitter.addListener(
-          MGLModule.OfflineCallbackName.Error,
+          RNMBXModule.OfflineCallbackName.Error,
           this._onError,
         );
       }
@@ -407,8 +407,8 @@ class OfflineManager {
     }
   }
 
-  async _initialize(): Promise<boolean> {
-    if (this._hasInitialized) {
+  async _initialize(forceInit?: boolean): Promise<boolean> {
+    if (this._hasInitialized && !forceInit) {
       return true;
     }
 
@@ -434,7 +434,7 @@ class OfflineManager {
     this._progressListeners[name](pack, e.payload);
 
     // cleanup listeners now that they are no longer needed
-    if (state === MGLModule.OfflinePackDownloadState.Complete) {
+    if (state === RNMBXModule.OfflinePackDownloadState.Complete) {
       this.unsubscribe(name);
     }
   }

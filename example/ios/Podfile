@@ -1,18 +1,29 @@
-require_relative '../node_modules/react-native/scripts/react_native_pods'
-require_relative '../node_modules/@react-native-community/cli-platform-ios/native_modules'
+# Resolve react_native_pods.rb with node to allow for hoisting
+require Pod::Executable.execute_command('node', ['-p',
+  'require.resolve(
+    "react-native/scripts/react_native_pods.rb",
+    {paths: [process.argv[1]]},
+  )', __dir__]).strip
 
-$RNMapboxMapsImpl = 'mapbox' # mapbox-gl, maplibre
+platform :ios, '13.4'
+prepare_react_native_project!
 
-if ENV['CI_MAP_IMPL']
-  fail "Invalid CI_MAP_IMPL value" unless ["maplibre", "mapbox-gl", "mapbox"].include?(ENV['CI_MAP_IMPL'])
-
-  $RNMapboxMapsImpl = ENV['CI_MAP_IMPL']
+$RNMapboxMapsImpl = 'mapbox'
+if ENV['RNMBX11']
+  $RNMapboxMapsVersion = '= 11.0.0'
 end
 
-if $RNMapboxMapsImpl == 'mapbox'
-  platform :ios, '13.0'
-else
-  platform :ios, '12.4'
+if ENV['CI_MAP_IMPL']
+  fail "Invalid CI_MAP_IMPL value" unless ["mapbox","mapbox11"].include?(ENV['CI_MAP_IMPL'])
+  case ENV['CI_MAP_IMPL']
+  when 'mapbox'
+    $RNMapboxMapsImpl = 'mapbox'
+  when 'mapbox11'
+    $RNMapboxMapsImpl = 'mapbox'
+    $RNMapboxMapsVersion = '= 11.0.0'
+  else
+    fail "Invalid CI_MAP_IMPL value: #{ENV['CI_MAP_IMPL']}"
+  end
 end
 
 # If you are using a `react-native-flipper` your iOS build will fail when `NO_FLIPPER=1` is set.
@@ -32,18 +43,12 @@ if linkage != nil
   use_frameworks! :linkage => linkage.to_sym
 end
 
-production = ENV["PRODUCTION"] == "1"
-
-if $RNMapboxMapsImpl == 'maplibre'
-  $RNMapboxMapsSwiftPackageManager = {
-    url: "https://github.com/maplibre/maplibre-gl-native-distribution",
-    requirement: {
-      kind: "upToNextMajorVersion",
-      minimumVersion: "5.12.1"
-    },
-    product_name: "Mapbox"
-  }
+flags = ReactNativePodsUtils.get_default_flags()
+if flags[:fabric_enabled]
+  pod 'glog', :podspec => '../node_modules/react-native/third-party-podspecs/glog.podspec', :modular_headers => false
 end
+
+production = ENV["PRODUCTION"] == "1"
 
 # We ignore warning except for RNMapboxMaps
 INHIBIT_WARNING_BY_DEFAULT = true
@@ -64,20 +69,12 @@ if INHIBIT_WARNING_BY_DEFAULT
 end
 
 target 'RNMapboxGLExample' do
-  pod 'rnmapbox-maps', :path => '../../', :inhibit_warnings => false
+  #pod 'rnmapbox-maps', :path => '../../', :inhibit_warnings => false
 
   config = use_native_modules!
 
-  # Flags change depending on the env values.
-  flags = get_default_flags()
-
   use_react_native!(
     :path => config[:reactNativePath],
-    # Hermes is now enabled by default. Disable by setting this flag to false.
-    # Upcoming versions of React Native may rely on get_default_flags(), but
-    # we make it explicit here to aid in the React Native upgrade process.
-    :hermes_enabled => flags[:hermes_enabled],
-    :fabric_enabled => flags[:fabric_enabled],
     # Enables Flipper.
     #
     # Note that if you have use_frameworks! enabled, Flipper will not work and
@@ -115,16 +112,15 @@ target 'RNMapboxGLExample' do
         # necessary for Mac Catalyst builds
         :mac_catalyst_enabled => false
       )
-      __apply_Xcode_12_5_M1_post_install_workaround(installer)  
       $RNMapboxMaps.post_install(installer)
     end
   else
     # CI configuration
     post_install do |installer|
+      # https://github.com/facebook/react-native/blob/main/packages/react-native/scripts/react_native_pods.rb#L197-L202
       react_native_post_install(
         installer,
-        # Set `mac_catalyst_enabled` to `true` in order to apply patches
-        # necessary for Mac Catalyst builds
+        config[:reactNativePath],
         :mac_catalyst_enabled => false
       )
       disable_optimizations_in_release(installer)

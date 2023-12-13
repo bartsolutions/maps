@@ -1,16 +1,18 @@
 import React from 'react';
-import { NativeModules, requireNativeComponent } from 'react-native';
+import { NativeModules } from 'react-native';
 
 import { FilterExpression, LineLayerStyleProps } from '../utils/MapboxStyles';
 import { StyleValue } from '../utils/StyleValue';
+import RNMBXLineLayerNativeComponent from '../specs/RNMBXLineLayerNativeComponent';
 
 import AbstractLayer from './AbstractLayer';
 
-const MapboxGL = NativeModules.MGLModule;
+const Mapbox = NativeModules.RNMBXModule;
 
-export const NATIVE_MODULE_NAME = 'RCTMGLLineLayer';
+// @{codepart-replace-start(LayerPropsCommon.codepart-tsx)}
+type Slot = 'bottom' | 'middle' | 'top';
 
-export type Props = {
+type LayerPropsCommon = {
   /**
    * A string that uniquely identifies the source in the style to which it is added.
    */
@@ -64,6 +66,16 @@ export type Props = {
   maxZoomLevel?: number;
 
   /**
+   * The slot this layer is assigned to. If specified, and a slot with that name exists, it will be placed at that position in the layer order.
+   *
+   * v11 only
+   */
+  slot?: Slot;
+};
+// @{codepart-replace-end}
+
+export type Props = LayerPropsCommon & {
+  /**
    * Customizable style attributes
    */
   style?: LineLayerStyleProps;
@@ -78,7 +90,7 @@ type NativeTypeProps = Omit<Props, 'style'> & {
  */
 class LineLayer extends AbstractLayer<Props, NativeTypeProps> {
   static defaultProps = {
-    sourceID: MapboxGL.StyleSource.DefaultSourceID,
+    sourceID: Mapbox.StyleSource.DefaultSourceID,
   };
 
   render() {
@@ -86,11 +98,11 @@ class LineLayer extends AbstractLayer<Props, NativeTypeProps> {
       ...this.baseProps,
       sourceLayerID: this.props.sourceLayerID,
     };
-    return <RCTMGLLineLayer ref={this.setNativeLayer} {...props} />;
+    return (
+      // @ts-expect-error just codegen stuff
+      <RNMBXLineLayerNativeComponent ref={this.setNativeLayer} {...props} />
+    );
   }
 }
-
-const RCTMGLLineLayer =
-  requireNativeComponent<NativeTypeProps>(NATIVE_MODULE_NAME);
 
 export default LineLayer;

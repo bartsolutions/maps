@@ -6,15 +6,15 @@ import React, {
   useMemo,
   useRef,
 } from 'react';
-import { NativeModules, requireNativeComponent } from 'react-native';
+import { NativeModules } from 'react-native';
 
 import { MapboxGLEvent } from '../types';
+import { type Position } from '../types/Position';
 import { makeLatLngBounds, makePoint } from '../utils/geoUtils';
 import { type NativeRefType } from '../utils/nativeRef';
+import NativeCameraView from '../specs/RNMBXCameraNativeComponent';
 
-const NativeModule = NativeModules.MGLModule;
-
-type Position = number[] | [number, number];
+const NativeModule = NativeModules.RNMBXModule;
 
 export enum UserTrackingMode {
   Follow = 'normal',
@@ -55,8 +55,6 @@ const nativeAnimationMode = (
       return NativeCameraModes.Ease;
   }
 };
-
-export const NATIVE_MODULE_NAME = 'RCTMGLCamera';
 
 // Native module types.
 
@@ -156,13 +154,19 @@ export interface CameraProps
     CameraMinMaxConfig {
   /** The configuration that the camera falls back on, if no other values are specified. */
   defaultSettings?: CameraStop;
+
   /** Whether the camera should send any configuration to the native module. Prevents unnecessary tile
    * fetching and improves performance when the map is not visible. Defaults to `true`. */
   allowUpdates?: boolean;
+
   /** Any arbitrary primitive value that, when changed, causes the camera to retry moving to its target
    * configuration. (Not yet implemented.) */
   triggerKey?: string | number;
-  /** Executes when user tracking mode changes. */
+
+  /**
+   * Executes when user tracking mode changes.
+   * @deprecated use Viewport#onStatusChanged instead.
+   */
   onUserTrackingModeChange?: UserTrackingModeChangeCallback;
 }
 
@@ -242,7 +246,7 @@ export const Camera = memo(
         onUserTrackingModeChange,
       } = props;
 
-      const nativeCamera = useRef<typeof RCTMGLCamera>(
+      const nativeCamera = useRef<typeof NativeCameraView>(
         null,
       ) as NativeRefType<NativeCameraProps>;
 
@@ -308,6 +312,29 @@ export const Camera = memo(
           return _nativeStop;
         },
         [props.followUserLocation],
+      );
+
+      // since codegen uses `payload` name in cpp code for creating payload for event,
+      // we rename it to `payloadRenamed` to avoid name collision there on new arch
+      const _onUserTrackingModeChange = useCallback(
+        (
+          event: MapboxGLEvent<
+            'usertrackingmodechange',
+            {
+              followUserLocation: boolean;
+              followUserMode: UserTrackingMode | null;
+            }
+          >,
+        ) => {
+          if (onUserTrackingModeChange) {
+            if (!event.nativeEvent.payload) {
+              // @ts-expect-error see the comment above
+              event.nativeEvent.payload = event.nativeEvent.payloadRenamed;
+            }
+            onUserTrackingModeChange(event);
+          }
+        },
+        [onUserTrackingModeChange],
       );
 
       const nativeDefaultStop = useMemo((): NativeCameraStop | null => {
@@ -538,8 +565,9 @@ export const Camera = memo(
       }));
 
       return (
-        <RCTMGLCamera
+        <RNMBXCamera
           testID={'Camera'}
+          // @ts-expect-error just codegen stuff
           ref={nativeCamera}
           stop={nativeStop}
           animationDuration={animationDuration}
@@ -554,14 +582,14 @@ export const Camera = memo(
           minZoomLevel={minZoomLevel}
           maxZoomLevel={maxZoomLevel}
           maxBounds={nativeMaxBounds}
-          onUserTrackingModeChange={onUserTrackingModeChange}
+          // @ts-expect-error just codegen stuff
+          onUserTrackingModeChange={_onUserTrackingModeChange}
         />
       );
     },
   ),
 );
 
-const RCTMGLCamera =
-  requireNativeComponent<NativeCameraProps>(NATIVE_MODULE_NAME);
+const RNMBXCamera = NativeCameraView;
 
 export type Camera = CameraRef;

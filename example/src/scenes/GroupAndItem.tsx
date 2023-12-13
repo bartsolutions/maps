@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import type { BaseExampleProps } from 'src/examples/common/BaseExamplePropTypes';
 
 import MapHeader from '../examples/common/MapHeader';
 import Page, { PageProps } from '../examples/common/Page';
@@ -17,77 +18,63 @@ import sheet from '../styles/sheet';
 import AnimatedLine from '../examples/Animations/AnimatedLine';
 import DriveTheLine from '../examples/Animations/DriveTheLine';
 // ANNOTATIONS
-import CustomCallout from '../examples/Annotations/CustomCallout';
-import Heatmap from '../examples/Annotations/Heatmap';
-import MarkerView from '../examples/Annotations/MarkerView';
-import PointAnnotationAnchors from '../examples/Annotations/PointAnnotationAnchors';
-import ShowPointAnnotation from '../examples/Annotations/ShowPointAnnotation';
+import * as Annotations from '../examples/Annotations';
 // CAMERA
-import CompassView from '../examples/Camera/CompassView';
-import Fit from '../examples/Camera/Fit';
-import FlyTo from '../examples/Camera/FlyTo';
-import GetCenter from '../examples/Camera/GetCenter';
-import GetZoom from '../examples/Camera/GetZoom';
-import RestrictMapBounds from '../examples/Camera/RestrictMapBounds';
-import SetHeading from '../examples/Camera/SetHeading';
-import SetPitch from '../examples/Camera/SetPitch';
-import SetUserTrackingModes from '../examples/Camera/SetUserTrackingModes';
-import TakeSnapshot from '../examples/Camera/TakeSnapshot';
-import TakeSnapshotWithMap from '../examples/Camera/TakeSnapshotWithMap';
-import YoYo from '../examples/Camera/YoYo';
+import * as Camera from '../examples/Camera';
 // FILLRASTERLAYER
-import ChoroplethLayerByZoomLevel from '../examples/FillRasterLayer/ChoroplethLayerByZoomLevel';
-import CustomVectorSource from '../examples/FillRasterLayer/CustomVectorSource';
-import GeoJSONSource from '../examples/FillRasterLayer/GeoJSONSource';
-import ImageOverlay from '../examples/FillRasterLayer/ImageOverlay';
-import IndoorBuilding from '../examples/FillRasterLayer/IndoorBuilding';
-import QueryAtPoint from '../examples/FillRasterLayer/QueryAtPoint';
-import QueryWithRect from '../examples/FillRasterLayer/QueryWithRect';
-import WatercolorRasterTiles from '../examples/FillRasterLayer/WatercolorRasterTiles';
+import * as FillRasterLayer from '../examples/FillRasterLayer';
 // LINE LAYER
-import GradientLine from '../examples/LineLayer/GradientLine';
+import * as LineLayer from '../examples/LineLayer';
 // MAP
-import ChangeLayerColor from '../examples/Map/ChangeLayerColor';
-import CreateOfflineRegion from '../examples/Map/CreateOfflineRegion';
-import OfflineExample from '../examples/Map/OfflineExample';
-import Ornaments from '../examples/Map/Ornaments';
-import PointInMapView from '../examples/Map/PointInMapView';
-import ShowAndHideLayer from '../examples/Map/ShowAndHideLayer';
-import ShowClick from '../examples/Map/ShowClick';
-import ShowMap from '../examples/Map/ShowMap';
-import ShowMapLocalStyle from '../examples/Map/ShowMapLocalStyle';
-import ShowRegionDidChange from '../examples/Map/ShowRegionDidChange';
-import SourceLayerVisibility from '../examples/Map/SourceLayerVisibility';
-import StyleJson from '../examples/Map/StyleJson';
-import TwoByTwo from '../examples/Map/TwoByTwo';
-import MapAndRNNavigation from '../examples/Map/MapAndRNNavigation';
-import DynamicUrl from '../examples/Map/DynamicUrl';
-import LocalizeLabels from '../examples/Map/LocalizeLabels';
+import * as Map from '../examples/Map';
 // SYMBOLCIRCLELAYER
-import CustomIcon from '../examples/SymbolCircleLayer/CustomIcon';
-import DataDrivenCircleColors from '../examples/SymbolCircleLayer/DataDrivenCircleColors';
-import Earthquakes from '../examples/SymbolCircleLayer/Earthquakes';
-import ShapeSourceIcon from '../examples/SymbolCircleLayer/ShapeSourceIcon';
-import SdfIcons from '../examples/SymbolCircleLayer/SdfIcons';
+import * as SymbolCircleLayer from '../examples/SymbolCircleLayer';
 // USERLOCATION
-import SetDisplacement from '../examples/UserLocation/SetDisplacement';
-import SetTintColor from '../examples/UserLocation/SetTintColor';
-import UserLocationRenderMode from '../examples/UserLocation/UserLocationRenderMode';
-import UserLocationPadding from '../examples/UserLocation/UserLocationPadding';
-import UserLocationUpdates from '../examples/UserLocation/UserLocationUpdates';
+import * as UserLocation from '../examples/UserLocation';
 // MISC
 import BugReportExample from '../examples/BugReportExample';
 import BugReportExampleTS from '../examples/BugReportExampleTS';
 import CacheManagement from '../examples/CacheManagement';
 // V10
+import * as V10 from '../examples/V10';
+/*
 import CameraAnimation from '../examples/V10/CameraAnimation';
 import GlobeProjection from '../examples/V10/GlobeProjection';
 import MapHandlers from '../examples/V10/MapHandlers';
 import Markers from '../examples/V10/Markers';
 import QueryTerrainElevation from '../examples/V10/QueryTerrainElevation';
 import TerrainSkyAtmosphere from '../examples/V10/TerrainSkyAtmosphere';
+*/
+// V11
+import StyleImportConfig from '../examples/V11/StyleImportConfig';
 
 const MostRecentExampleKey = '@recent_example';
+
+//type with all uppercase letters from A-Z
+type UpercaseLetter =
+  | 'A'
+  | 'B'
+  | 'C'
+  | 'D'
+  | 'E'
+  | 'F'
+  | 'G'
+  | 'H'
+  | 'I'
+  | 'J'
+  | 'K'
+  | 'L'
+  | 'M'
+  | 'N'
+  | 'O'
+  | 'P'
+  | 'Q'
+  | 'R'
+  | 'S'
+  | 'T'
+  | 'X'
+  | 'Y'
+  | 'Z';
 
 const styles = StyleSheet.create({
   exampleList: {
@@ -110,11 +97,9 @@ const styles = StyleSheet.create({
 
 type NavigationType = 'Group' | 'Item';
 
-type ItemComponent = React.ComponentType<{
-  label: string;
-  onDismissExample: () => void;
-  navigation: ItemProps['navigation'];
-}>;
+type ItemComponentProps = BaseExampleProps;
+
+type ItemComponent = React.ComponentType<Partial<ItemComponentProps>>;
 
 interface ExampleNode {
   label: string;
@@ -201,7 +186,7 @@ type RootStackParamList = {
 };
 
 type GroupProps = NativeStackScreenProps<RootStackParamList, 'Group'>;
-type ItemProps = NativeStackScreenProps<RootStackParamList, 'Item'>;
+export type ItemProps = NativeStackScreenProps<RootStackParamList, 'Item'>;
 
 class ExampleGroup implements ExampleNode {
   label: string;
@@ -246,6 +231,49 @@ class ExampleGroup implements ExampleNode {
   updateIfNeeded(_updated: () => void): void {}
 }
 
+const PageWrapper = (Component: ItemComponent) => (props: BaseExampleProps) =>
+  (
+    <Page
+      label={props.label}
+      onDismissExample={props.onDismissExample}
+      navigation={props.navigation}
+    >
+      <Component {...props} />
+    </Page>
+  );
+
+function example(
+  Component: ItemComponent & {
+    metadata?: {
+      title?: string;
+      tags?: string[];
+      docs?: string;
+      page?: boolean;
+    };
+  },
+  title: string | undefined = undefined,
+) {
+  return new ExampleItem(
+    Component?.metadata?.title ?? title ?? 'n/a',
+    Component?.metadata?.page ? Component : PageWrapper(Component),
+  );
+}
+
+function exampleGroup(
+  group: { [key: `${UpercaseLetter}${string}`]: ItemComponent } & {
+    metadata: { title: string };
+  },
+) {
+  const { metadata, ...components } = group;
+
+  return new ExampleGroup(
+    metadata.title,
+    Object.entries(components).map(([key, value]) => {
+      return example(value, key);
+    }),
+  );
+}
+
 const BugReportPage =
   (Klass: React.ComponentType<PageProps>) =>
   ({ ...props }: PageProps) =>
@@ -259,83 +287,15 @@ const Examples = new ExampleGroup('React Native Mapbox', [
   new MostRecentExampleItem(),
   new ExampleItem('Bug Report Template', BugReportPage(BugReportExample)),
   new ExampleItem('Bug Report Template TS', BugReportPage(BugReportExampleTS)),
-  new ExampleGroup('V10', [
-    new ExampleItem('Terrain, Sky, & Atmosphere', TerrainSkyAtmosphere),
-    new ExampleItem('Globe Projection', GlobeProjection),
-    new ExampleItem('Query Terrain Elevation', QueryTerrainElevation),
-    new ExampleItem('Camera Animation', CameraAnimation),
-    new ExampleItem('Map Handlers', MapHandlers),
-  ]),
-  new ExampleGroup('Map', [
-    new ExampleItem('Show Map', ShowMap),
-    new ExampleItem('Show Map With Local Style.JSON', ShowMapLocalStyle),
-    new ExampleItem('Show Click', ShowClick),
-    new ExampleItem('Show Region Did Change', ShowRegionDidChange),
-    new ExampleItem('Two Map Views', TwoByTwo),
-    new ExampleItem('Create Offline Region', CreateOfflineRegion),
-    new ExampleItem('Offline example', OfflineExample),
-    new ExampleItem('Localize labels', LocalizeLabels),
-    new ExampleItem('Get Pixel Point in MapView', PointInMapView),
-    new ExampleItem('Show and hide a layer', ShowAndHideLayer),
-    new ExampleItem('Change Layer Color', ChangeLayerColor),
-    new ExampleItem('Source Layer Visiblity', SourceLayerVisibility),
-    new ExampleItem('Style JSON', StyleJson),
-    new ExampleItem('Set Tint Color', SetTintColor),
-    new ExampleItem('Ornaments', Ornaments),
-    new ExampleItem('Map and rn-navigation', MapAndRNNavigation),
-    new ExampleItem('Dynamic Url', DynamicUrl),
-  ]),
-  new ExampleGroup('Camera', [
-    new ExampleItem('Fit (Bounds, Center/Zoom, Padding)', Fit),
-    new ExampleItem('Set Pitch', SetPitch),
-    new ExampleItem('Set Heading', SetHeading),
-    new ExampleItem('Fly To', FlyTo),
-    new ExampleItem('Restrict Bounds', RestrictMapBounds),
-    new ExampleItem('Set User Tracking Modes', SetUserTrackingModes),
-    new ExampleItem('Yo Yo Camera', YoYo),
-    new ExampleItem('Take Snapshot Without Map', TakeSnapshot),
-    new ExampleItem('Take Snapshot With Map', TakeSnapshotWithMap),
-    new ExampleItem('Get Current Zoom', GetZoom),
-    new ExampleItem('Get Center', GetCenter),
-    new ExampleItem('Compass View', CompassView),
-  ]),
-  new ExampleGroup('User Location', [
-    new ExampleItem('User Location Render Mode', UserLocationRenderMode),
-    new ExampleItem('User Location Updates', UserLocationUpdates),
-    new ExampleItem('User Location Padding', UserLocationPadding),
-    new ExampleItem('Set Displacement', SetDisplacement),
-  ]),
-  new ExampleGroup('Symbol/CircleLayer', [
-    new ExampleItem('Custom Icon', CustomIcon),
-    new ExampleItem('Clustering Earthquakes', Earthquakes),
-    new ExampleItem('Shape Source From Icon', ShapeSourceIcon),
-    new ExampleItem('Data Driven Circle Colors', DataDrivenCircleColors),
-    new ExampleItem('SDF Icons', SdfIcons),
-  ]),
-  new ExampleGroup('Fill/RasterLayer', [
-    new ExampleItem('GeoJSON Source', GeoJSONSource),
-    new ExampleItem('Watercolor Raster Tiles', WatercolorRasterTiles),
-    new ExampleItem('Indoor Building Map', IndoorBuilding),
-    new ExampleItem('Query Feature Point', QueryAtPoint),
-    new ExampleItem('Query Features Bounding Box', QueryWithRect),
-    new ExampleItem('Custom Vector Source', CustomVectorSource),
-    new ExampleItem('Image Overlay', ImageOverlay),
-    new ExampleItem(
-      'Choropleth Layer By Zoom Level',
-      ChoroplethLayerByZoomLevel,
-    ),
-  ]),
-  new ExampleGroup('LineLayer', [
-    new ExampleItem('GradientLine', GradientLine),
-  ]),
-  new ExampleGroup('Annotations', [
-    new ExampleItem('Marker Positions & Anchors', Markers),
-    new ExampleItem('Show Point Annotation', ShowPointAnnotation),
-    new ExampleItem('Point Annotation Anchors', PointAnnotationAnchors),
-    new ExampleItem('Marker View', MarkerView),
-    new ExampleItem('Heatmap', Heatmap),
-    new ExampleItem('Custom Callout', CustomCallout),
-  ]),
+  exampleGroup(V10),
+  new ExampleGroup('V11', [example(StyleImportConfig)]),
+  exampleGroup(Map),
+  exampleGroup(Camera),
+  exampleGroup(UserLocation),
+  exampleGroup(SymbolCircleLayer),
+  exampleGroup(FillRasterLayer),
+  exampleGroup(LineLayer),
+  exampleGroup(Annotations),
   new ExampleGroup('Animations', [
     new ExampleItem('Animated Line', AnimatedLine),
     new ExampleItem('Animation Along a Line', DriveTheLine),
@@ -396,6 +356,7 @@ function ExampleGroupComponent({
       <MapHeader label={title} {...back} />
       <View style={sheet.matchParent}>
         <FlatList
+          testID="example-list"
           style={styles.exampleList}
           data={items}
           keyExtractor={(item) => item.label}
