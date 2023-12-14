@@ -1,6 +1,6 @@
 import { NativeModules, Platform } from 'react-native';
 
-const { MGLNavigationModule } = NativeModules;
+const {  RNMBXNavigationModule } = NativeModules;
 
 /**
  * NavigationManager implements a asynchronous calculateRoute method to find best route between
@@ -37,7 +37,7 @@ class NavigationManager {
     const { coordinates } = point;
     await this._initialize();
     const { geoJson: jsonPayload }: { geoJson: string } =
-      await MGLNavigationModule.geocoding(coordinates, language);
+      await RNMBXNavigationModule.geocoding(coordinates, language);
 
     const geoJson: GeoJSON.FeatureCollection = JSON.parse(jsonPayload);
     return geoJson;
@@ -66,7 +66,7 @@ class NavigationManager {
 
     await this._initialize();
     const { geoJson: jsonPayload }: { geoJson: string } =
-      await MGLNavigationModule.calculateRoute(points);
+      await RNMBXNavigationModule.calculateRoute(points);
     const geoJson: GeoJSON.FeatureCollection = JSON.parse(jsonPayload);
     return geoJson;
   }
@@ -83,3 +83,4 @@ class NavigationManager {
 
 const navigationManager = new NavigationManager();
 export default navigationManager;
+
