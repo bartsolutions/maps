@@ -165,10 +165,9 @@ class RNMBXOfflineModule(private val mReactContext: ReactApplicationContext) :
                 metadata = metadata
             )
             tileRegionPacks[id] = actPack
-            startLoading(pack = actPack)
-            promise.resolve(
+            startLoading(pack = actPack).map {
                 writableMapOf("bounds" to boundsStr, "metadata" to metadataStr)
-            )
+            }.toPromise(promise, "createPack")
         } catch (e: Throwable) {
             promise.reject("createPack", e)
         }
@@ -207,8 +206,7 @@ class RNMBXOfflineModule(private val mReactContext: ReactApplicationContext) :
     fun resumePackDownload(name: String, promise: Promise) {
         val pack = tileRegionPacks[name]
         if (pack != null) {
-            startLoading(pack)
-            promise.resolve(null)
+            startLoading(pack).map { null }.toPromise(promise,"resumePackDownload")
         } else {
             promise.reject("resumePackDownload", "Unknown offline pack: $name")
         }
@@ -282,75 +280,83 @@ class RNMBXOfflineModule(private val mReactContext: ReactApplicationContext) :
     }
     // endregion
 
-    fun startLoading(pack: TileRegionPack) {
-        val id = pack.name
-        val bounds = pack.bounds
-        if (bounds == null) {
-            throw IllegalArgumentException("startLoading failed as there are no bounds in pack")
-        }
-        val zoomRange = pack.zoomRange
-        if (zoomRange == null) {
-            throw IllegalArgumentException("startLoading failed as there is no zoomRange in pack")
-        }
-        val styleURI = pack.styleURI
-        if (styleURI == null) {
-            throw IllegalArgumentException("startLoading failed as there is no styleURI in pack")
-        }
-        val metadata = pack.metadata
-        if (metadata == null) {
-            throw IllegalArgumentException("startLoading failed as there is no metadata in pack")
-        }
-        val stylePackOptions = StylePackLoadOptions.Builder()
-            .glyphsRasterizationMode(GlyphsRasterizationMode.IDEOGRAPHS_RASTERIZED_LOCALLY)
-            .metadata(metadata.toMapboxValue())
-            .build()
+    fun startLoading(pack: TileRegionPack): Result<Unit> {
+        try {
+            val id = pack.name
+            val bounds = pack.bounds
+                ?: return Result.failure(IllegalArgumentException("startLoading failed as there are no bounds in pack"))
+            val zoomRange = pack.zoomRange
+                ?: return Result.failure(IllegalArgumentException("startLoading failed as there is no zoomRange in pack"))
+            val styleURI = pack.styleURI
+                ?: return Result.failure(IllegalArgumentException("startLoading failed as there is no styleURI in pack"))
+            val metadata = pack.metadata
+                ?: return Result.failure(IllegalArgumentException("startLoading failed as there is no metadata in pack"))
 
-        val descriptorOptions = TilesetDescriptorOptions.Builder()
-            .styleURI(styleURI)
-            .minZoom(zoomRange.minZoom)
-            .maxZoom(zoomRange.maxZoom)
-            .stylePackOptions(stylePackOptions)
-            .pixelRatio(2.0f)
-            .build()
-        val tilesetDescriptor = offlineManager.createTilesetDescriptor(descriptorOptions)
-        val mapboxNavigation = RNMBXNavigationModule.getInstance(mReactContext).mapboxNavigation
-        val navTilesetDescriptor = mapboxNavigation.tilesetDescriptorFactory.getLatest()
-        val loadOptions = TileRegionLoadOptions.Builder()
-            .geometry(bounds)
-            .descriptors(arrayListOf(tilesetDescriptor, navTilesetDescriptor))
-            .metadata(metadata.toMapboxValue())
-            .acceptExpired(true)
-            .networkRestriction(NetworkRestriction.NONE)
-            .averageBytesPerSecond(null)
-            .build()
+            val stylePackOptions = StylePackLoadOptions.Builder()
+                .glyphsRasterizationMode(GlyphsRasterizationMode.IDEOGRAPHS_RASTERIZED_LOCALLY)
+                .metadata(metadata.toMapboxValue())
+                .build()
 
-        var lastProgress: TileRegionLoadProgress? = null
-        val task = this.tileStore.loadTileRegion(
-            id, loadOptions,
-            { progress ->
-                lastProgress = progress
-                tileRegionPacks[id]!!.progress = progress
-                tileRegionPacks[id]!!.state = TileRegionPackState.ACTIVE
+            val descriptorOptions = TilesetDescriptorOptions.Builder()
+                .styleURI(styleURI)
+                .minZoom(zoomRange.minZoom)
+                .maxZoom(zoomRange.maxZoom)
+                .stylePackOptions(stylePackOptions)
+                .pixelRatio(2.0f)
+                .build()
+            val tilesetDescriptor = offlineManager.createTilesetDescriptor(descriptorOptions)
 
-                offlinePackProgressDidChange(progress, metadata, TileRegionPackState.ACTIVE)
-            }, { expected ->
-                expected.value?.also {
-                    val progress = lastProgress
-                    if (progress != null) {
-                        offlinePackProgressDidChange(progress, metadata, TileRegionPackState.COMPLETE)
-                    } else {
-                        Logger.w(LOG_TAG, "startLoading: tile region completed, but got no progress information")
+            val loadOptions = TileRegionLoadOptions.Builder()
+                .geometry(bounds)
+                .descriptors(arrayListOf(tilesetDescriptor))
+                .metadata(metadata.toMapboxValue())
+                .acceptExpired(true)
+                .networkRestriction(NetworkRestriction.NONE)
+                .averageBytesPerSecond(null)
+                .build()
+
+            var lastProgress: TileRegionLoadProgress? = null
+            val task = this.tileStore.loadTileRegion(
+                id, loadOptions,
+                { progress ->
+                    lastProgress = progress
+                    tileRegionPacks[id]!!.progress = progress
+                    tileRegionPacks[id]!!.state = TileRegionPackState.ACTIVE
+
+                    offlinePackProgressDidChange(progress, metadata, TileRegionPackState.ACTIVE)
+                },
+                { expected ->
+                    expected.value?.also {
+                        val progress = lastProgress
+                        if (progress != null) {
+                            offlinePackProgressDidChange(
+                                progress,
+                                metadata,
+                                TileRegionPackState.COMPLETE
+                            )
+                        } else {
+                            Logger.w(
+                                LOG_TAG,
+                                "startLoading: tile region completed, but got no progress information"
+                            )
+                        }
+                        tileRegionPacks[id]!!.state = TileRegionPackState.COMPLETE
+                    } ?: run {
+                        val error = expected.error ?: TileRegionError(
+                            TileRegionErrorType.OTHER,
+                            "$LOG_TAG neither value nor error in expected"
+                        )
+
+                        tileRegionPacks[id]!!.state = TileRegionPackState.INACTIVE
+                        offlinePackDidReceiveError(name = id, error = error)
                     }
-                    tileRegionPacks[id]!!.state = TileRegionPackState.COMPLETE
-                } ?: run {
-                    val error = expected.error ?: TileRegionError(TileRegionErrorType.OTHER, "$LOG_TAG neither value nor error in expected")
-
-                    tileRegionPacks[id]!!.state = TileRegionPackState.INACTIVE
-                    offlinePackDidReceiveError(name=id, error=error)
-                }
-            },
-        )
-        tileRegionPacks[id]!!.cancelable = task
+                },
+            )
+            tileRegionPacks[id]!!.cancelable = task
+            return Result.success(Unit)
+        } catch (e: Exception) {
+            return Result.failure(e)
+        }
     }
 
     private fun convertRegionsToJSON(tileRegions: List<TileRegion>, promise: Promise) {
@@ -651,6 +657,14 @@ class RNMBXOfflineModule(private val mReactContext: ReactApplicationContext) :
         const val OFFLINE_PROGRESS = "MapboxOfflineRegionProgress"
 
     }
+}
+
+private fun <T> Result<T>.toPromise(promise: Promise, error: String) {
+    val ok = getOrElse {
+        promise.reject(error, exceptionOrNull() ?: Exception("Unknown error"))
+        return@toPromise
+    }
+    promise.resolve(ok)
 }
 
 fun TileRegionLoadProgress.toPercentage(): Double {

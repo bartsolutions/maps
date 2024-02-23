@@ -3,6 +3,7 @@ package com.rnmapbox.rnmbx.components.camera
 import android.animation.Animator
 import android.content.Context
 import android.location.Location
+import com.facebook.react.bridge.Dynamic
 import com.facebook.react.bridge.ReadableMap
 import com.mapbox.maps.plugin.gestures.gestures
 import com.rnmapbox.rnmbx.location.LocationManager.Companion.getInstance
@@ -15,6 +16,7 @@ import com.mapbox.maps.plugin.locationcomponent.OnIndicatorBearingChangedListene
 import com.mapbox.maps.plugin.locationcomponent.OnIndicatorPositionChangedListener
 import com.facebook.react.bridge.WritableMap
 import com.facebook.react.bridge.WritableNativeMap
+import com.facebook.react.uimanager.annotations.ReactProp
 import com.mapbox.maps.*
 import com.mapbox.maps.plugin.locationcomponent.location
 import com.mapbox.maps.plugin.viewport.ViewportStatus
@@ -59,7 +61,7 @@ class RNMBXCamera(private val mContext: Context, private val mManager: RNMBXCame
     private val mAnimated = false
     private val mHeading = 0.0
 
-    private var mFollowUserLocation = false
+    private var mFollowUserLocation = defaultFollowUserLocation
     private var mFollowUserMode: String? = null
     private var mFollowZoomLevel : Double? = null
     private var mFollowPitch : Double? = null
@@ -70,6 +72,9 @@ class RNMBXCamera(private val mContext: Context, private val mManager: RNMBXCame
     private var mMinZoomLevel : Double? = null
     private var mMaxZoomLevel : Double? = null
     private var mMaxBounds: LatLngBounds? = null
+
+
+    var ts: Int? = null;
 
 
     private val mCameraCallback: Animator.AnimatorListener = object : Animator.AnimatorListener {
@@ -117,6 +122,11 @@ class RNMBXCamera(private val mContext: Context, private val mManager: RNMBXCame
         }
     }
 
+    fun updateCameraStop(map: ReadableMap) {
+        val stop = CameraStop.fromReadableMap(mContext, map, null)
+        setStop(stop)
+    }
+
     fun setDefaultStop(stop: CameraStop?) {
         mDefaultStop = stop
     }
@@ -126,22 +136,22 @@ class RNMBXCamera(private val mContext: Context, private val mManager: RNMBXCame
         _updateViewportState()
     }
 
-    fun setFollowUserLocation(value: Boolean) {
-        mFollowUserLocation = value
+    fun setFollowUserLocation(value: Boolean?) {
+        mFollowUserLocation = value ?: defaultFollowUserLocation
         _updateViewportState()
     }
 
-    fun setFollowZoomLevel(zoomLevel: Double) {
+    fun setFollowZoomLevel(zoomLevel: Double?) {
         mFollowZoomLevel = zoomLevel
         _updateViewportState();
     }
 
-    fun setFollowPitch(pitch: Double) {
+    fun setFollowPitch(pitch: Double?) {
         mFollowPitch = pitch
         _updateViewportState();
     }
 
-    fun setFollowHeading(heading: Double) {
+    fun setFollowHeading(heading: Double?) {
         mFollowHeading = heading
         _updateViewportState();
     }
@@ -169,15 +179,12 @@ class RNMBXCamera(private val mContext: Context, private val mManager: RNMBXCame
     private fun updateMaxBounds() {
         withMapView { mapView ->
             val map = mapView.getMapboxMap()
-            val maxBounds = mMaxBounds
             val builder = CameraBoundsOptions.Builder()
-
-            if (maxBounds != null) {
-                builder.bounds(maxBounds.toBounds())
-            }
-            mMinZoomLevel?.let { builder.minZoom(it) }
-            mMaxZoomLevel?.let { builder.maxZoom(it) }
+            builder.bounds(mMaxBounds?.toBounds())
+            builder.minZoom(mMinZoomLevel ?: 0.0) // Passing null does not reset this value.
+            builder.maxZoom(mMaxZoomLevel ?: 25.0) // Passing null does not reset this value.
             map.setBounds(builder.build())
+            mCameraStop?.let { updateCamera(it) }
         }
     }
 
@@ -559,5 +566,7 @@ class RNMBXCamera(private val mContext: Context, private val mManager: RNMBXCame
         const val minimumZoomLevelForUserTracking = 10.5
         const val defaultZoomLevelForUserTracking = 14.0
         const val LOG_TAG = "RNMBXCamera"
+
+        const val defaultFollowUserLocation = false
     }
 }

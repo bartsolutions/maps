@@ -8,18 +8,23 @@ import MapboxMobileEvents
 let DEFAULT_SOURCE_ID = "composite";
 
 @objc(RNMBXModule)
+public
 class RNMBXModule : NSObject {
-  #if RNMBX_11
-  static var accessToken : String? {
+  
+  public static var accessToken : String? {
     didSet {
+#if RNMBX_11
       if let token = accessToken {
         MapboxOptions.accessToken = token
       }
+#else
+      if let token = accessToken {
+        ResourceOptionsManager.default.resourceOptions.accessToken = token
+      }
+#endif
     }
   }
-  #else
-    static var accessToken : String?
-  #endif
+
     
   @objc
   func constantsToExport() -> [AnyHashable: Any]! {
@@ -103,9 +108,7 @@ class RNMBXModule : NSObject {
   }
   
   @objc func setTelemetryEnabled(_ telemetryEnabled: Bool) {
-    #if !RNMBX_11 // RNMBX_11_TODO
-    UserDefaults.mme_configuration().mme_isCollectionEnabled = telemetryEnabled
-    #endif
+    UserDefaults.standard.set(telemetryEnabled, forKey: "MGLMapboxMetricsEnabled")
   }
 
   @objc func setWellKnownTileServer(_ tileServer: String) {

@@ -2,6 +2,26 @@
 import Turf
 import MapKit
 
+public typealias RNMBXMapViewFactoryFunc = (String, UIView) -> (MapView?)
+
+/**
+ * Experimental MapView factory for advanced usecases
+ */
+public class RNMBXMapViewFactory {
+  private static var factories: [String: RNMBXMapViewFactoryFunc] = [:];
+  
+  static func get(_ id: String) -> RNMBXMapViewFactoryFunc? {
+    if let id = id.split(separator: ":", maxSplits: 1).first {
+      return factories[String(id)]
+    }
+    return nil
+  }
+  
+  public static func register(_ id: String, factory: @escaping RNMBXMapViewFactoryFunc) {
+    factories.updateValue(factory, forKey: id)
+  }
+}
+
 class FeatureEntry {
   let feature: RNMBXMapComponent
   let view: UIView
@@ -132,6 +152,9 @@ open class RNMBXMapView: UIView {
 
   @objc
   public var deselectAnnotationOnTap: Bool = false
+
+  @objc
+  public var mapViewImpl : String? = nil
   
 #if RNMBX_11
   var cancelables = Set<AnyCancelable>()
@@ -149,20 +172,38 @@ open class RNMBXMapView: UIView {
   
   var _mapView: MapView! = nil
   func createMapView() {
-#if RNMBX_11
-    _mapView = MapView(frame: self.bounds, mapInitOptions:  MapInitOptions())
-#else
-    let resourceOptions = ResourceOptions(accessToken: RNMBXModule.accessToken!)
-    _mapView = MapView(frame: frame, mapInitOptions: MapInitOptions(resourceOptions: resourceOptions))
-#endif
-    _mapView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-    addSubview(_mapView)
+    if let mapViewImpl = mapViewImpl, let mapViewInstance = createAndAddMapViewImpl(mapViewImpl, self) {
+      _mapView = mapViewInstance
+    } else {
+  #if RNMBX_11
+      _mapView = MapView(frame: self.bounds, mapInitOptions:  MapInitOptions())
+  #else
+      let accessToken = RNMBXModule.accessToken
+      if accessToken == nil {
+        Logger.log(level: .error, message: "No accessToken set, please call Mapbox.setAccessToken(...)")
+      }
+      let resourceOptions = ResourceOptions(accessToken: accessToken ?? "")
+      _mapView = MapView(frame: frame, mapInitOptions: MapInitOptions(resourceOptions: resourceOptions))
+  #endif
+      _mapView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+      addSubview(_mapView)
+    }
     
     _mapView.gestures.delegate = self
     setupEvents()
+    afterMapViewAdded()
   }
-  
-  var mapView : MapView! {
+
+  func createAndAddMapViewImpl(_ impl: String, _ view: RNMBXMapView) -> MapView? {
+    if let factory = RNMBXMapViewFactory.get(impl) {
+      return factory(impl, view) as? MapView;
+    } else {
+      Logger.log(level:.error, message: "No mapview factory registered for: \(impl)")
+      return nil
+    }
+  }
+
+  public var mapView : MapView! {
     get { return _mapView }
   }
   var mapboxMap: MapboxMap! {
@@ -273,6 +314,7 @@ open class RNMBXMapView: UIView {
     case scaleBar
     case onLongPress
     case onPress
+    case zoomEnabled
     case scrollEnabled
     case rotateEnabled
     case pitchEnabled
@@ -298,6 +340,8 @@ open class RNMBXMapView: UIView {
         map.applyOnLongPress()
       case .onPress:
         map.applyOnPress()
+      case .zoomEnabled:
+        map.applyZoomEnabled()
       case .scrollEnabled:
         map.applyScrollEnabled()
       case .rotateEnabled:
@@ -306,6 +350,7 @@ open class RNMBXMapView: UIView {
         map.applyOnMapChange()
       case .styleURL:
         map.applyStyleURL()
+        map.applyLocalizeLabels()
       case .pitchEnabled:
         map.applyPitchEnabled()
       case .gestureSettings:
@@ -661,10 +706,18 @@ open class RNMBXMapView: UIView {
     changes.apply(self)
   }
 
+  var zoomEnabled: Bool? = nil
   @objc public func setReactZoomEnabled(_ value: Bool) {
-    self.mapView.gestures.options.quickZoomEnabled = value
-    self.mapView.gestures.options.doubleTapToZoomInEnabled = value
-    self.mapView.gestures.options.pinchZoomEnabled = value
+    self.zoomEnabled = value
+    changed(.zoomEnabled)
+  }
+
+  func applyZoomEnabled() {
+    if let value = zoomEnabled {
+      self.mapView.gestures.options.quickZoomEnabled = value
+      self.mapView.gestures.options.doubleTapToZoomInEnabled = value
+      self.mapView.gestures.options.pinchZoomEnabled = value
+    }
   }
 
   var scrollEnabled: Bool? = nil
@@ -789,6 +842,9 @@ open class RNMBXMapView: UIView {
       }
     }
   }
+  
+  // MARK: - hooks for subclasses
+  open func afterMapViewAdded() {}
 }
 
 // MARK: - event handlers

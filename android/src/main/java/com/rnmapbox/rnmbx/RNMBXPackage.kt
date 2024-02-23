@@ -13,6 +13,7 @@ import com.rnmapbox.rnmbx.components.annotation.RNMBXMarkerViewManager
 import com.rnmapbox.rnmbx.components.annotation.RNMBXPointAnnotationManager
 import com.rnmapbox.rnmbx.components.annotation.RNMBXPointAnnotationModule
 import com.rnmapbox.rnmbx.components.camera.RNMBXCameraManager
+import com.rnmapbox.rnmbx.components.camera.RNMBXCameraModule
 import com.rnmapbox.rnmbx.components.camera.RNMBXViewport
 import com.rnmapbox.rnmbx.components.camera.RNMBXViewportManager
 import com.rnmapbox.rnmbx.components.camera.RNMBXViewportModule
@@ -51,6 +52,7 @@ import com.rnmapbox.rnmbx.modules.RNMBXModule
 import com.rnmapbox.rnmbx.modules.RNMBXOfflineModule
 import com.rnmapbox.rnmbx.modules.RNMBXOfflineModuleLegacy
 import com.rnmapbox.rnmbx.modules.RNMBXSnapshotModule
+import com.rnmapbox.rnmbx.modules.RNMBXTileStoreModule
 import com.rnmapbox.rnmbx.shape_animators.RNMBXMovePointShapeAnimatorModule
 import com.rnmapbox.rnmbx.shape_animators.ShapeAnimatorManager
 import com.rnmapbox.rnmbx.utils.ViewTagResolver
@@ -92,10 +94,12 @@ class RNMBXPackage : TurboReactPackage() {
             RNMBXLocationModule.REACT_CLASS -> return RNMBXLocationModule(reactApplicationContext)
             RNMBXOfflineModule.REACT_CLASS -> return RNMBXOfflineModule(reactApplicationContext)
             RNMBXNavigationModule.REACT_CLASS -> return RNMBXNavigationModule.getInstance(reactApplicationContext)
+            RNMBXTileStoreModule.REACT_CLASS -> return RNMBXTileStoreModule(reactApplicationContext)
             RNMBXOfflineModuleLegacy.REACT_CLASS -> return RNMBXOfflineModuleLegacy(reactApplicationContext)
             RNMBXSnapshotModule.REACT_CLASS -> return RNMBXSnapshotModule(reactApplicationContext)
             RNMBXLogging.REACT_CLASS -> return RNMBXLogging(reactApplicationContext)
             NativeMapViewModule.NAME -> return NativeMapViewModule(reactApplicationContext, getViewTagResolver(reactApplicationContext, s))
+            RNMBXCameraModule.NAME -> return RNMBXCameraModule(reactApplicationContext, getViewTagResolver(reactApplicationContext, s))
             RNMBXViewportModule.NAME -> return RNMBXViewportModule(reactApplicationContext, getViewTagResolver(reactApplicationContext, s))
             RNMBXShapeSourceModule.NAME -> return RNMBXShapeSourceModule(reactApplicationContext, getViewTagResolver(reactApplicationContext, s))
             RNMBXImageModule.NAME -> return RNMBXImageModule(reactApplicationContext, getViewTagResolver(reactApplicationContext, s))
@@ -114,8 +118,8 @@ class RNMBXPackage : TurboReactPackage() {
         val managers: MutableList<ViewManager<*, *>> = ArrayList()
 
         // components
-        managers.add(RNMBXCameraManager(reactApplicationContext))
-        managers.add(RNMBXViewportManager(reactApplicationContext))
+        managers.add(RNMBXCameraManager(reactApplicationContext, getViewTagResolver(reactApplicationContext, "RNMBXCameraManager")))
+        managers.add(RNMBXViewportManager(reactApplicationContext, getViewTagResolver(reactApplicationContext, "RNMBXViewportManager")))
         managers.add(RNMBXMapViewManager(reactApplicationContext, getViewTagResolver(reactApplicationContext, "RNMBXMapViewManager")))
         managers.add(RNMBXStyleImportManager(reactApplicationContext))
         managers.add(RNMBXModelsManager(reactApplicationContext))
@@ -200,6 +204,15 @@ class RNMBXPackage : TurboReactPackage() {
                 false,  // isCxxModule
                 false // isTurboModule
             )
+            moduleInfos[RNMBXTileStoreModule.REACT_CLASS] = ReactModuleInfo(
+                RNMBXTileStoreModule.REACT_CLASS,
+                RNMBXTileStoreModule.REACT_CLASS,
+                false,  // canOverrideExistingModule
+                false,  // needsEagerInit
+                true,  // hasConstants
+                false,  // isCxxModule
+                false // isTurboModule
+            )
             moduleInfos[RNMBXOfflineModuleLegacy.REACT_CLASS] = ReactModuleInfo(
                 RNMBXOfflineModuleLegacy.REACT_CLASS,
                 RNMBXOfflineModuleLegacy.REACT_CLASS,
@@ -239,6 +252,15 @@ class RNMBXPackage : TurboReactPackage() {
             moduleInfos[RNMBXViewportModule.NAME] = ReactModuleInfo(
                 RNMBXViewportModule.NAME,
                 RNMBXViewportModule.NAME,
+                false,  // canOverrideExistingModule
+                false,  // needsEagerInit
+                false,  // hasConstants
+                false,  // isCxxModule
+                isTurboModule // isTurboModule
+            )
+            moduleInfos[RNMBXCameraModule.NAME] = ReactModuleInfo(
+                RNMBXCameraModule.NAME,
+                RNMBXCameraModule.NAME,
                 false,  // canOverrideExistingModule
                 false,  // needsEagerInit
                 false,  // hasConstants

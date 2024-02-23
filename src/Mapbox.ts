@@ -51,6 +51,7 @@ export {
 } from './modules/offline/offlineManager';
 export { default as navigationManager } from './modules/navigation/navigationManager';
 export { default as offlineManagerLegacy } from './modules/offline/offlineManagerLegacy';
+export { default as TileStore } from './modules/offline/TileStore';
 export {
   default as snapshotManager,
   type SnapshotOptions,

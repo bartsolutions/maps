@@ -1,5 +1,5 @@
 def defaultMapboxMapsImpl = "mapbox"
-def defaultMapboxMapsVersion = "10.16.2"
+def defaultMapboxMapsVersion = "10.16.4"
 def defaultMapboxNavigationVersion = "2.13.0"
 
 def safeExtGet(prop, fallback) {
@@ -44,7 +44,11 @@ if (safeExtGet("RNMapboxMapsImpl", defaultMapboxMapsImpl) == "mapbox") {
 }
 
 android {
-    namespace = "com.rnmapbox.rnmbx"
+    def agpVersion = com.android.Version.ANDROID_GRADLE_PLUGIN_VERSION
+    // Check AGP version for backward compatibility reasons
+    if (agpVersion.tokenize('.')[0].toInteger() >= 7) {
+        namespace = "com.rnmapbox.rnmbx"
+    }
     if (safeExtGet("RNMapboxMapsImpl", defaultMapboxMapsImpl) == "maplibre") {
         msg = '@rnmapbox/maps: Maplibre implementation has been removed, set RNMapboxMapsImpl to mapbox- see https://github.com/rnmapbox/maps/wiki/Deprecated-RNMapboxImpl-Maplibre#android'
         logger.error(msg)
@@ -163,4 +167,15 @@ dependencies {
         implementation "com.squareup.okhttp3:okhttp:4.9.0"
         implementation "com.squareup.okhttp3:okhttp-urlconnection:4.9.0"
     }
+
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.8.2'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'
+    testImplementation 'org.jetbrains.kotlin:kotlin-test'
+    testImplementation "org.mockito.kotlin:mockito-kotlin:5.2.1"
+}
+
+
+tasks.withType(Test).configureEach {
+    useJUnitPlatform()
 }
