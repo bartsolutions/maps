@@ -1173,7 +1173,7 @@ open class RNMBXMapView(private val mContext: Context, var mManager: RNMBXMapVie
                 .tileStoreUsageMode(TileStoreUsageMode.DISABLED)
                 .build()
             if (surfaceView == false) {
-                options = MapInitOptions(context = mContext, textureView = true, resourceOptions = resourceOptions)
+                options = MapInitOptions(context = mContext, textureView = true)
             }
             options.resourceOptions = resourceOptions
             val mapView = if (options != null) MapView(mContext, options) else MapView(mContext)
