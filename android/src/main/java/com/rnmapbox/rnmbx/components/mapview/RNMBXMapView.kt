@@ -19,6 +19,7 @@ import androidx.lifecycle.ViewTreeLifecycleOwner
 import com.facebook.react.bridge.*
 import com.mapbox.android.gestures.*
 import com.mapbox.bindgen.Value
+import com.mapbox.common.TileStore
 import com.mapbox.geojson.Feature
 import com.mapbox.geojson.FeatureCollection
 import com.mapbox.geojson.Point
@@ -68,10 +69,9 @@ import java.util.*
 
 import com.rnmapbox.rnmbx.components.annotation.RNMBXPointAnnotationCoordinator
 import com.rnmapbox.rnmbx.components.images.ImageManager
+import com.rnmapbox.rnmbx.modules.RNMBXModule
 
 import com.rnmapbox.rnmbx.v11compat.event.*
-import com.rnmapbox.rnmbx.v11compat.feature.*
-import com.rnmapbox.rnmbx.v11compat.mapboxmap.*
 import com.rnmapbox.rnmbx.v11compat.ornamentsettings.*
 import org.json.JSONException
 import org.json.JSONObject
@@ -1120,6 +1120,10 @@ open class RNMBXMapView(private val mContext: Context, var mManager: RNMBXMapVie
         }
     }
 
+    private val tileStore: TileStore by lazy {
+        TileStore.create("empty")
+    }
+
     fun setSourceVisibility(
         visible: Boolean,
         sourceId: String,
@@ -1161,13 +1165,19 @@ open class RNMBXMapView(private val mContext: Context, var mManager: RNMBXMapVie
             }
         }
         if (!created) {
-            var options: MapInitOptions? = null
+            var options = MapInitOptions(context = mContext)
+            val resourceOptions = ResourceOptionsManager
+                .getDefault(mContext)
+                .resourceOptions
+                .toBuilder()
+                .tileStoreUsageMode(TileStoreUsageMode.DISABLED)
+                .build()
             if (surfaceView == false) {
-                options = MapInitOptions(context = mContext, textureView = true)
+                options = MapInitOptions(context = mContext, textureView = true, resourceOptions = resourceOptions)
             }
+            options.resourceOptions = resourceOptions
             val mapView = if (options != null) MapView(mContext, options) else MapView(mContext)
             mMapView = mapView
-
 
             val matchParent = FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
