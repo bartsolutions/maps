@@ -4,15 +4,11 @@ import android.os.Handler
 import com.facebook.react.bridge.Promise
 import com.mapbox.maps.extension.style.layers.properties.generated.LineJoin
 import com.facebook.react.module.annotations.ReactModule
-import com.rnmapbox.rnmbx.modules.RNMBXModule
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.rnmapbox.rnmbx.events.constants.EventTypes
-import com.rnmapbox.rnmbx.modules.RNMBXOfflineModule
-import com.rnmapbox.rnmbx.modules.RNMBXLocationModule
 import com.facebook.react.bridge.ReactMethod
 import com.facebook.react.common.MapBuilder
-import com.mapbox.common.*
 import com.mapbox.maps.MapView
 import com.mapbox.maps.MapboxMap
 import com.mapbox.maps.Style

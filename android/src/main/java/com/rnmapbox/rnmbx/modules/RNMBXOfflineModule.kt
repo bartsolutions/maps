@@ -1,6 +1,5 @@
 package com.rnmapbox.rnmbx.modules
 
-import android.R.array
 import android.os.Build
 import android.util.Log
 import com.facebook.react.bridge.*
@@ -11,6 +10,8 @@ import com.mapbox.bindgen.Value
 import com.mapbox.common.*
 import com.mapbox.geojson.*
 import com.mapbox.maps.*
+import com.mapbox.search.offline.OfflineIndexChangeEvent
+import com.mapbox.search.offline.OfflineSearchEngine
 import com.rnmapbox.rnmbx.events.IEvent
 import com.rnmapbox.rnmbx.events.OfflineEvent
 import com.rnmapbox.rnmbx.events.constants.EventTypes
@@ -18,7 +19,6 @@ import com.rnmapbox.rnmbx.utils.*
 import com.rnmapbox.rnmbx.utils.Logger
 import com.rnmapbox.rnmbx.utils.extensions.*
 import com.rnmapbox.rnmbx.v11compat.offlinemanager.getOfflineManager
-import com.mapbox.turf.TurfMeasurement
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
@@ -28,9 +28,16 @@ import java.nio.file.Files
 import java.nio.file.Paths
 import java.nio.file.StandardCopyOption
 import java.util.concurrent.CountDownLatch
+import com.mapbox.search.offline.OfflineIndexChangeEvent.EventType
+import com.mapbox.search.offline.OfflineIndexErrorEvent
+import com.mapbox.search.offline.OfflineResponseInfo
+import com.mapbox.search.offline.OfflineReverseGeoOptions
+import com.mapbox.search.offline.OfflineSearchCallback
+import com.mapbox.search.offline.OfflineSearchEngineSettings
+import com.mapbox.search.offline.OfflineSearchOptions
+import com.mapbox.search.offline.OfflineSearchResult
 
 import com.rnmapbox.rnmbx.v11compat.offlinemanager.*
-import com.rnmapbox.rnmbx.v11compat.resourceoption.getMapboxAccessToken
 
 data class ZoomRange(val minZoom: Byte, val maxZoom: Byte) {
 
@@ -113,6 +120,11 @@ class RNMBXOfflineModule(private val mReactContext: ReactApplicationContext) :
             setOption(
                 TileStoreOptions.MAPBOX_ACCESS_TOKEN,
                 TileDataDomain.NAVIGATION,
+                Value(RNMBXModule.getAccessToken(mReactContext))
+            )
+            setOption(
+                TileStoreOptions.MAPBOX_ACCESS_TOKEN,
+                TileDataDomain.SEARCH,
                 Value(RNMBXModule.getAccessToken(mReactContext))
             )
         }
@@ -310,7 +322,11 @@ class RNMBXOfflineModule(private val mReactContext: ReactApplicationContext) :
 
             val loadOptions = TileRegionLoadOptions.Builder()
                 .geometry(bounds)
-                .descriptors(arrayListOf(tilesetDescriptor, navTilesetDescriptor))
+                .descriptors(arrayListOf(
+                    tilesetDescriptor,
+                    navTilesetDescriptor,
+                    OfflineSearchEngine.createTilesetDescriptor(),
+                    OfflineSearchEngine.createPlacesTilesetDescriptor()))
                 .metadata(metadata.toMapboxValue())
                 .acceptExpired(true)
                 .networkRestriction(NetworkRestriction.NONE)

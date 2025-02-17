@@ -14,7 +14,6 @@ import com.mapbox.maps.MapSnapshotOptions
 import com.mapbox.maps.Size
 import com.mapbox.maps.Snapshotter
 import com.rnmapbox.rnmbx.modules.RNMBXModule.Companion.getAccessToken
-import com.rnmapbox.rnmbx.modules.RNMBXSnapshotModule
 import com.rnmapbox.rnmbx.utils.BitmapUtils
 import java.io.IOException
 import java.io.OutputStream

@@ -1,19 +1,22 @@
 package com.rnmapbox.rnmbx.modules
 
+import android.util.Log
 import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
 import com.facebook.react.bridge.ReadableArray
-import com.facebook.react.module.annotations.ReactModule
+import com.facebook.react.bridge.WritableMap
 import com.mapbox.api.directions.v5.DirectionsCriteria
 import com.mapbox.api.directions.v5.models.RouteOptions
 import com.mapbox.api.geocoding.v5.GeocodingCriteria
 import com.mapbox.api.geocoding.v5.MapboxGeocoding
 import com.mapbox.api.geocoding.v5.models.GeocodingResponse
 import com.mapbox.bindgen.Value
+import com.mapbox.common.Cancelable
 import com.mapbox.common.TileDataDomain
+import com.mapbox.common.TileRegionLoadOptions
 import com.mapbox.common.TileStore
 import com.mapbox.common.TileStoreOptions
 import com.mapbox.geojson.Feature
@@ -28,8 +31,17 @@ import com.mapbox.navigation.base.route.NavigationRouterCallback
 import com.mapbox.navigation.base.route.RouterFailure
 import com.mapbox.navigation.base.route.RouterOrigin
 import com.mapbox.navigation.core.MapboxNavigation
-import com.rnmapbox.rnmbx.modules.RNMBXLocationModule
-import com.rnmapbox.rnmbx.modules.RNMBXModule
+import com.mapbox.search.common.AsyncOperationTask
+import com.mapbox.search.offline.OfflineIndexChangeEvent
+import com.mapbox.search.offline.OfflineIndexChangeEvent.EventType
+import com.mapbox.search.offline.OfflineIndexErrorEvent
+import com.mapbox.search.offline.OfflineResponseInfo
+import com.mapbox.search.offline.OfflineReverseGeoOptions
+import com.mapbox.search.offline.OfflineSearchCallback
+import com.mapbox.search.offline.OfflineSearchEngine
+import com.mapbox.search.offline.OfflineSearchEngineSettings
+import com.mapbox.search.offline.OfflineSearchOptions
+import com.mapbox.search.offline.OfflineSearchResult
 import org.json.JSONException
 import retrofit2.Call
 import retrofit2.Callback
@@ -53,6 +65,8 @@ class RNMBXNavigationModule private constructor(private val mReactContext: React
         // Remove upstream listeners, stop unnecessary background tasks
     }
 
+    private var searchRequestTask: AsyncOperationTask? = null
+    private lateinit var tilesLoadingTask: Cancelable
 
     private val tileStore: TileStore by lazy {
         TileStore.create().also {
@@ -67,10 +81,15 @@ class RNMBXNavigationModule private constructor(private val mReactContext: React
                 TileDataDomain.NAVIGATION,
                 Value(RNMBXModule.getAccessToken(mReactContext))
             )
+            it.setOption(
+                TileStoreOptions.MAPBOX_ACCESS_TOKEN,
+                TileDataDomain.SEARCH,
+                Value(RNMBXModule.getAccessToken(mReactContext))
+            )
         }
     }
 
-     val mapboxNavigation: MapboxNavigation by lazy {
+    val mapboxNavigation: MapboxNavigation by lazy {
         val routingTilesOptions = RoutingTilesOptions.Builder()
             .tileStore(tileStore)
             .build()
@@ -83,43 +102,88 @@ class RNMBXNavigationModule private constructor(private val mReactContext: React
         MapboxNavigation(navOptions)
     }
 
+    val searchEngine: OfflineSearchEngine by lazy {
+        OfflineSearchEngine.create(
+            OfflineSearchEngineSettings(
+                tileStore = tileStore,
+                accessToken = RNMBXModule.getAccessToken(mReactContext)
+            )
+        )
+    }
+
+    private val engineReadyCallback = object : OfflineSearchEngine.EngineReadyCallback {
+        override fun onEngineReady() {
+            Log.i("SearchApiExample", "Engine is ready")
+        }
+    }
+
+    private val searchCallback = object : OfflineSearchCallback {
+
+        override fun onResults(results: List<OfflineSearchResult>, responseInfo: OfflineResponseInfo) {
+            Log.i("SearchApiExample", "Results: $results")
+        }
+
+        override fun onError(e: Exception) {
+            Log.i("SearchApiExample", "Search error", e)
+        }
+    }
+
     @ReactMethod
     @Throws(JSONException::class)
     fun geocoding(point: ReadableArray, language: String, promise: Promise)
     {
         val longitude = point.getDouble(0)
         val latitude = point.getDouble(1)
-        var reverseGeocode = MapboxGeocoding.builder()
-            .accessToken(RNMBXModule.getAccessToken(mReactContext))
-            .query(Point.fromLngLat(longitude, latitude))
-            .geocodingTypes(GeocodingCriteria.TYPE_POI_LANDMARK)
-            .languages(language)
+        val tileStoreOffline = TileStore.create()
+        val dcLocation = Point.fromLngLat(136.0339911055176, 37.899920004207516)
+        val tileRegionId = "hk-offline-search-map"
+        val descriptors = listOf(OfflineSearchEngine.createTilesetDescriptor())
+        val tileRegionLoadOptions = TileRegionLoadOptions.Builder()
+            .descriptors(descriptors)
+            .geometry(dcLocation)
+            .acceptExpired(true)
             .build()
 
-        reverseGeocode.enqueueCall(object : Callback<GeocodingResponse> {
-            override fun onResponse(call: Call<GeocodingResponse>, response: Response<GeocodingResponse>) {
-                if (response.isSuccessful) {
-                    val features: MutableList<Feature> = mutableListOf()
-                    for (carmenFeature in response.body()?.features() ?: emptyList()) {
-                        val feature = Feature.fromGeometry(carmenFeature.geometry())
-                        feature.addStringProperty("place_name", carmenFeature.placeName() ?: "")
-                        feature.addStringProperty("text", carmenFeature.text() ?: "")
-                        feature.addStringProperty("address", carmenFeature.address() ?: "")
-                        // Add any other properties you want to include in the Feature
-                        features.add(feature)
-                    }
-                    val featureCollection = FeatureCollection.fromFeatures(features)
-                    val result = Arguments.createMap()
-                    result.putString("geoJson", featureCollection.toJson())
-                    promise.resolve(result)
+        var offlineSearchEngine = OfflineSearchEngine.create(
+            OfflineSearchEngineSettings(
+                tileStore = tileStoreOffline,
+                accessToken = RNMBXModule.getAccessToken(mReactContext)
+            )
+        )
+        offlineSearchEngine.addEngineReadyCallback(engineReadyCallback)
+        val token = RNMBXModule.getAccessToken(mReactContext)
+        Log.i("SearchApiExample", "token $token")
+        offlineSearchEngine.addOnIndexChangeListener(object : OfflineSearchEngine.OnIndexChangeListener {
+            override fun onIndexChange(event: OfflineIndexChangeEvent) {
+                if (event.regionId == tileRegionId && (event.type == EventType.ADD || event.type == EventType.UPDATE)) {
+                    Log.i("SearchApiExample", "$tileRegionId was successfully added or updated")
+
+                    searchRequestTask = offlineSearchEngine.reverseGeocoding(
+                        OfflineReverseGeoOptions(center = dcLocation),
+                        searchCallback
+                    )
                 }
             }
 
-            override fun onFailure(call: Call<GeocodingResponse>, throwable: Throwable) {
-                // Handle the failure
-                promise.reject("ERROR", throwable)
+            override fun onError(event: OfflineIndexErrorEvent) {
+                Log.i("SearchApiExample", "Offline index error: $event")
             }
         })
+
+        Log.i("SearchApiExample", "Loading tiles...")
+
+        tilesLoadingTask = tileStoreOffline.loadTileRegion(
+            tileRegionId,
+            tileRegionLoadOptions,
+            { progress -> Log.i("SearchApiExample", "Loading progress: $progress") },
+            { result ->
+                if (result.isValue) {
+                    Log.i("SearchApiExample", "Tiles successfully loaded: ${result.value}")
+                } else {
+                    Log.i("SearchApiExample", "Tiles loading error: ${result.error}")
+                }
+            }
+        )
     }
 
 
@@ -141,6 +205,7 @@ class RNMBXNavigationModule private constructor(private val mReactContext: React
             .coordinatesList(waypoints)
             .profile(DirectionsCriteria.PROFILE_WALKING)
             .build()
+
         try {
             mapboxNavigation.requestRoutes(
                 routeOptions,

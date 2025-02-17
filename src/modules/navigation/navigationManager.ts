@@ -24,23 +24,22 @@ class NavigationManager {
    *
    * @param  {GeoJSON.Point} point  GPS location.
    * @param  {string} language Language.
-   * @return {GeoJSON.FeatureCollection}
+   * @return {any}
    */
   async geocoding(
     point: GeoJSON.Point,
     language: string,
-  ): Promise<GeoJSON.FeatureCollection | null> {
+  ): Promise<any> {
     if (Platform.OS !== 'android') {
       console.warn('geocoding only support Android');
       return null;
     }
     const { coordinates } = point;
     await this._initialize();
-    const { geoJson: jsonPayload }: { geoJson: string } =
+    const payload =
       await RNMBXNavigationModule.geocoding(coordinates, language);
-
-    const geoJson: GeoJSON.FeatureCollection = JSON.parse(jsonPayload);
-    return geoJson;
+    console.log("payload", payload)
+    return payload;
   }
 
   /**

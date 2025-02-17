@@ -1,6 +1,7 @@
 def defaultMapboxMapsImpl = "mapbox"
-def defaultMapboxMapsVersion = "10.16.4"
-def defaultMapboxNavigationVersion = "2.13.0"
+def defaultMapboxMapsVersion = "10.15.0"
+def defaultMapboxNavigationVersion = "2.15.1"
+def defaultMapboxOfflineSearchVersion = "1.2.0"
 
 def safeExtGet(prop, fallback) {
     rootProject.ext.has(prop) ? rootProject.ext.get(prop) : fallback
@@ -112,6 +113,11 @@ android {
         targetCompatibility JavaVersion.VERSION_1_8
     }
 
+    // For Kotlin projects
+    kotlinOptions {
+        jvmTarget = "1.8"
+    }
+
     buildTypes {
         release {
             minifyEnabled false
@@ -148,6 +154,7 @@ dependencies {
         if (safeExtGet("RNMapboxMapsImpl", defaultMapboxMapsImpl) == "mapbox") {
             implementation "com.mapbox.maps:android:${safeExtGet("RNMapboxMapsVersion", defaultMapboxMapsVersion)}"
             implementation "com.mapbox.navigation:android:${safeExtGet("RNMapboxNavigationVersion", defaultMapboxNavigationVersion)}"
+            implementation "com.mapbox.search:offline:${safeExtGet("RNMapboxOfflineSearchVersion", defaultMapboxOfflineSearchVersion)}"
             implementation 'com.mapbox.mapboxsdk:mapbox-sdk-turf:6.11.0'
             implementation 'androidx.asynclayoutinflater:asynclayoutinflater:1.0.0'
         } else {
