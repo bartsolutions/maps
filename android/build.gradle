@@ -1,5 +1,5 @@
 def defaultMapboxMapsImpl = "mapbox"
-def defaultMapboxMapsVersion = "10.16.4"
+def defaultMapboxMapsVersion = "10.18.4"
 def defaultMapboxNavigationVersion = "2.13.0"
 
 def safeExtGet(prop, fallback) {
@@ -14,6 +14,10 @@ def isNewArchitectureEnabled() {
     return project.hasProperty("newArchEnabled") && project.newArchEnabled == "true"
 }
 
+def getCoroutinesVersion(kotlinVersion) {
+    return kotlinVersion >= '1.9' ? '1.8.0' : '1.6.4'
+}
+
 // expo plugin
 if (rootProject.ext.has('expoRNMapboxMapsImpl')) {
     rootProject.ext.set('RNMapboxMapsImpl', rootProject.ext.get('expoRNMapboxMapsImpl'))
@@ -22,15 +26,19 @@ if (rootProject.ext.has('expoRNMapboxMapsVersion')) {
     rootProject.ext.set('RNMapboxMapsVersion', rootProject.ext.get('expoRNMapboxMapsVersion'))
 }
 
-
 buildscript {
   repositories {
     google()
     mavenCentral()
   }
 
+  ext {
+    rnmapboxDefaultKotlinVersion = '1.7.21'
+  }
+
+  project.ext.set("kotlinVersion", rootProject.ext.has('kotlinVersion') ? rootProject.ext.get('kotlinVersion') : rnmapboxDefaultKotlinVersion)
   dependencies {
-    classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${rootProject.ext.has('kotlinVersion') ? rootProject.ext.get('kotlinVersion') : '1.6.21'}"
+      classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${project.kotlinVersion}"
   }
 }
 
@@ -69,6 +77,7 @@ android {
                 } else {
                     java.srcDirs += 'src/main/mapbox-v11-compat/v10'
                 }
+                java.srcDirs += 'src/main/rn-compat/rn75'
                 if (safeExtGet("RNMapboxMapsUseV11", false)) {
                     logger.warn("RNMapboxMapsUseV11 is deprecated, just set RNMapboxMapsVersion to 11.*")
                 }
@@ -143,6 +152,9 @@ dependencies {
     // React Native
     implementation "com.facebook.react:react-native:+"
 
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:${safeExtGet('kotlinxCoroutinesCoreVersion', getCoroutinesVersion(project.kotlinVersion))}"
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:${safeExtGet('kotlinxCoroutinesAndroidVersion', getCoroutinesVersion(project.kotlinVersion))}"
+
     // Mapbox SDK
     customizableDependencies('RNMapboxMapsLibs') {
         if (safeExtGet("RNMapboxMapsImpl", defaultMapboxMapsImpl) == "mapbox") {
@@ -153,15 +165,15 @@ dependencies {
         } else {
             msg = '@rnmapbox/maps: RNMapboxMapsImpl has invalid value - only mapbox supported - see https://github.com/rnmapbox/maps/wiki/Deprecated-RNMapboxImpl-Maplibre#android'
             logger.error(msg)
-            throw new GradleException(msg) 
+            throw new GradleException(msg)
         }
     }
 
     // Dependencies
     customizableDependencies('RNMapboxMapsSupportLibs') {
-        implementation "com.android.support:support-vector-drawable:28.0.0"
+        //implementation "com.android.support:support-vector-drawable:28.0.0"
         implementation "com.android.support:support-annotations:28.0.0"
-        implementation "com.android.support:appcompat-v7:28.0.0"
+        //implementation "com.android.support:appcompat-v7:28.0.0"
     }
     customizableDependencies('RNMapboxMapsOkHTTPLibs') {
         implementation "com.squareup.okhttp3:okhttp:4.9.0"

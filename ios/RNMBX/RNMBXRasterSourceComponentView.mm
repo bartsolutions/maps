@@ -20,6 +20,11 @@ using namespace facebook::react;
     RNMBXRasterSource *_view;
 }
 
+// Needed because of this: https://github.com/facebook/react-native/pull/37274
++ (void)load
+{
+  [super load];
+}
 
 - (instancetype)initWithFrame:(CGRect)frame
 {
@@ -71,7 +76,7 @@ using namespace facebook::react;
 
 - (void)updateProps:(const Props::Shared &)props oldProps:(const Props::Shared &)oldProps
 {
-  const auto &newProps = static_cast<const RNMBXRasterSourceProps &>(*props);    
+  const auto &newProps = static_cast<const RNMBXRasterSourceProps &>(*props);
     id idx = RNMBXConvertFollyDynamicToId(newProps.id);
     if (idx != nil) {
         _view.id = idx;
@@ -108,7 +113,11 @@ using namespace facebook::react;
     if (attribution != nil) {
         _view.attribution = attribution;
     }
-    
+    id sourceBounds = RNMBXConvertFollyDynamicToId(newProps.sourceBounds);
+    if (sourceBounds != nil) {
+       _view.sourceBounds = sourceBounds;
+    }
+
   [super updateProps:props oldProps:oldProps];
 }
 

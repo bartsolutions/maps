@@ -13,9 +13,10 @@ import com.rnmapbox.rnmbx.utils.ViewTagResolver
 import com.rnmapbox.rnmbx.utils.extensions.asBooleanOrNull
 import com.rnmapbox.rnmbx.utils.extensions.asDoubleOrNull
 import com.rnmapbox.rnmbx.utils.extensions.asStringOrNull
+import com.rnmapbox.rnmbx.rncompat.dynamic.*
 
 class RNMBXCameraManager(private val mContext: ReactApplicationContext, val viewTagResolver: ViewTagResolver) :
-    AbstractEventEmitter<RNMBXCamera?>(
+    AbstractEventEmitter<RNMBXCamera>(
         mContext
     ), RNMBXCameraManagerInterface<RNMBXCamera> {
     override fun customEvents(): Map<String, String>? {

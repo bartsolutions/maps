@@ -22,15 +22,21 @@ Some notes about example app:
   cd example/ios ; RNMBX11=1 pod update MapboxMaps
   ```
   To build example in this mode on android:
-  Change `RNMBX11=true` in `example/android/gralde.properties`
+  Change `RNMBX11=true` in `example/android/gradle.properties`
 - NewArchitecture/Fabric:
   ```
   cd example/ios ; RCT_NEW_ARCH_ENABLED=1 pod update MapboxMaps
   ```
-  On android change `newArchEnabled=true` in `example/android/gralde.properties`
+  On android change `newArchEnabled=true` in `example/android/gradle.properties`
+
+### Running example app for Web
+
+```
+npx expo start -c --web
+```
 
 
-## Best practices for PR's
+## Best practices for PRs
 - If you plan to work on a bigger feature, please open a discussion, to discuss the best way to address it
 - If you add a feature, make sure you add it to the documentation
 - Use meaningful commit messages, use semantic commit messages

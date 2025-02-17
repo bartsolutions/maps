@@ -20,6 +20,12 @@ using namespace facebook::react;
     RNMBXMarkerView *_view;
 }
 
+// Needed because of this: https://github.com/facebook/react-native/pull/37274
++ (void)load
+{
+  [super load];
+}
+
 - (instancetype)initWithFrame:(CGRect)frame
 {
   if (self = [super initWithFrame:frame]) {
@@ -104,6 +110,7 @@ using namespace facebook::react;
         layoutMetrics.contentInsets,
         layoutMetrics.borderWidth,
         layoutMetrics.displayType,
+        layoutMetrics.positionType, // RN074
         layoutMetrics.layoutDirection,
         layoutMetrics.wasLeftAndRightSwapped,
         layoutMetrics.pointScaleFactor,

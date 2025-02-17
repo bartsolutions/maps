@@ -20,7 +20,7 @@ require 'json'
 package = JSON.parse(File.read(File.join(__dir__, 'package.json')))
 
 ## Warning: these lines are scanned by autogenerate.js
-rnMapboxMapsDefaultMapboxVersion = '~> 10.16.4'
+rnMapboxMapsDefaultMapboxVersion = '~> 10.19.0'
 
 rnMapboxMapsDefaultImpl = 'mapbox'
 
@@ -75,7 +75,7 @@ else
 end
 
 if $RNMapboxMapsUseV11 != nil
-  warn "WARNING: $RNMapboxMapsUseV11 is deprecated just set $RNMapboxMapsVersion to '= 11.0.0"
+  warn "WARNING: $RNMapboxMapsUseV11 is deprecated just set $RNMapboxMapsVersion to '= 11.8.0"
 end
 
 if $MapboxImplVersion =~ /(~>|>=|=|>)?\S*11\./
@@ -193,7 +193,7 @@ def $RNMapboxMaps.pre_install(installer)
 end
 
 ## RNMapboxMapsDownloadToken
-# expo does not supports `.netrc`, so we need to patch curl commend used by cocoapods to pass the credentials
+# expo does not support `.netrc`, so we need to patch curl command used by cocoapods to pass the credentials
 
 if $RNMapboxMapsDownloadToken
   module AddCredentialsToCurlWhenDownloadingMapbox
@@ -223,7 +223,7 @@ Pod::Spec.new do |s|
   s.source      	= { :git => "https://github.com/rnmapbox/maps.git" }
   s.license     	= "MIT"
   if $RNMapboxMapsUseV11
-    s.platform    	= :ios, "13.0"
+    s.platform    	= :ios, "12.4"
   else
     s.platform    	= :ios, "11.0"
   end
