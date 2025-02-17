@@ -1,5 +1,5 @@
 def defaultMapboxMapsImpl = "mapbox"
-def defaultMapboxMapsVersion = "10.18.4"
+def defaultMapboxMapsVersion = "10.18.0"
 def defaultMapboxNavigationVersion = "2.13.0"
 
 def safeExtGet(prop, fallback) {
