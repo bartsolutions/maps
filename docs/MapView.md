@@ -611,7 +611,7 @@ Returns an array of rendered map features that intersect with the given rectangl
 #### arguments
 | Name | Type | Required | Description  |
 | ---- | :--: | :------: | :----------: |
-| `bbox` | `BBox \| []` | `Yes` | A rectangle expressed in the map view’s coordinate system. For v10, this can be an empty array to query the visible map area. |
+| `bbox` | `BBox \| []` | `Yes` | A rectangle expressed in the map view’s coordinate system, density independent pixels and not map coordinates. This can be an empty array to query the visible map area. |
 | `filter` | `Array` | `No` | A set of strings that correspond to the names of layers defined in the current style. Only the features contained in these layers are included in the returned array. |
 | `layerIDs` | `Array` | `No` |  A array of layer id's to filter the features by |
 
@@ -730,4 +730,42 @@ await this._map.setSourceVisibility(false, 'composite', 'building')
 ```
 
 
+### setFeatureState(featureId, state, sourceId[, sourceLayerId])
 
+Updates the state map of a feature within a style source.<br/><br/>Updates entries in the state map of a given feature within a style source.<br/>Only entries listed in the `state` will be updated.<br/>An entry in the feature state map that is not listed in `state` will retain its previous value.
+
+#### arguments
+| Name | Type | Required | Description  |
+| ---- | :--: | :------: | :----------: |
+| `featureId` | `string` | `Yes` | Identifier of the feature whose state should be updated. |
+| `state` | `{[k:string]:NativeArg}` | `Yes` | undefined |
+| `sourceId` | `string` | `Yes` | undefined |
+| `sourceLayerId` | `n/a` | `No` | undefined |
+
+
+[Feature State](../examples/V10/FeatureState)### getFeatureState(featureId, sourceId[, sourceLayerId])
+
+Returns the state map of a feature within a style source.
+
+#### arguments
+| Name | Type | Required | Description  |
+| ---- | :--: | :------: | :----------: |
+| `featureId` | `string` | `Yes` | Identifier of the feature whose state should be queried. |
+| `sourceId` | `string` | `Yes` | Style source identifier. |
+| `sourceLayerId` | `string` | `No` | Style source layer identifier (for multi-layer sources such as vector sources). |
+
+
+[Feature State](../examples/V10/FeatureState)### removeFeatureState(featureId, stateKey, sourceId[, sourceLayerId])
+
+Removes entries from a feature state object.<br/><br/>Removes a specified property or all properties from a feature’s state object,<br/>depending on the value of `stateKey`.
+
+#### arguments
+| Name | Type | Required | Description  |
+| ---- | :--: | :------: | :----------: |
+| `featureId` | `string` | `Yes` | Identifier of the feature whose state should be removed. |
+| `stateKey` | `string \| null` | `Yes` | The name of the property to remove. If `null`, all feature’s state object properties are removed. |
+| `sourceId` | `string` | `Yes` | Style source identifier. |
+| `sourceLayerId` | `string` | `No` | Style source layer identifier (for multi-layer sources such as vector sources). |
+
+
+[Feature State](../examples/V10/FeatureState)

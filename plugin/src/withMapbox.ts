@@ -103,6 +103,13 @@ export const addConstantBlock = (
   const newSrc = [];
 
   if (RNMapboxMapsDownloadToken) {
+    console.warn(
+      '⚠️ RNMapbox: RNMapboxMapsDownloadToken is deprecated. Use RNMAPBOX_MAPS_DOWNLOAD_TOKEN environment variable instead.',
+    );
+    console.warn(
+      '⚠️ RNMapbox: This token will be part of your Podfile. Be careful about committing it to source control.',
+    );
+
     newSrc.push(`$RNMapboxMapsDownloadToken = '${RNMapboxMapsDownloadToken}'`);
   }
 
@@ -181,7 +188,7 @@ const withCocoaPodsInstallerBlocks: ConfigPlugin<MapboxPlugProps> = (
     RNMapboxMapsVersion,
     RNMapboxMapsDownloadToken,
     RNMapboxMapsUseV11,
-  },
+  }: MapboxPlugProps = {},
 ) =>
   withDangerousMod(config, [
     'ios',
@@ -209,11 +216,18 @@ const withCocoaPodsInstallerBlocks: ConfigPlugin<MapboxPlugProps> = (
 
 const withAndroidPropertiesDownloadToken: ConfigPlugin<MapboxPlugProps> = (
   config,
-  { RNMapboxMapsDownloadToken },
+  { RNMapboxMapsDownloadToken }: MapboxPlugProps = {},
 ) => {
   const key = 'MAPBOX_DOWNLOADS_TOKEN';
 
   if (RNMapboxMapsDownloadToken) {
+    console.warn(
+      '⚠️ WARNING: RNMapboxMapsDownloadToken is deprecated. Use RNMAPBOX_MAPS_DOWNLOAD_TOKEN environment variable instead.',
+    );
+    console.warn(
+      '⚠️ WARNING: This token will be part of your gradle.properties. Be careful about committing it to source control.',
+    );
+
     return withGradleProperties(config, (exportedConfig) => {
       exportedConfig.modResults = exportedConfig.modResults.filter(
         (item) => !(item.type === 'property' && item.key === key),
@@ -233,7 +247,11 @@ const withAndroidPropertiesDownloadToken: ConfigPlugin<MapboxPlugProps> = (
 
 const withAndroidPropertiesImpl2: ConfigPlugin<MapboxPlugProps> = (
   config,
-  { RNMapboxMapsImpl, RNMapboxMapsVersion, RNMapboxMapsUseV11 },
+  {
+    RNMapboxMapsImpl,
+    RNMapboxMapsVersion,
+    RNMapboxMapsUseV11,
+  }: MapboxPlugProps = {},
 ) => {
   const keyValues = {
     expoRNMapboxMapsImpl: RNMapboxMapsImpl,
@@ -275,7 +293,7 @@ const withAndroidProperties: ConfigPlugin<MapboxPlugProps> = (
     RNMapboxMapsDownloadToken,
     RNMapboxMapsVersion,
     RNMapboxMapsUseV11,
-  },
+  }: MapboxPlugProps = {},
 ) => {
   config = withAndroidPropertiesDownloadToken(config, {
     RNMapboxMapsDownloadToken,
@@ -317,10 +335,16 @@ allprojects {
   repositories {
     maven {
       url 'https://api.mapbox.com/downloads/v2/releases/maven'
-      authentication { basic(BasicAuthentication) }
-      credentials {
-        username = 'mapbox'
-        password = project.properties['MAPBOX_DOWNLOADS_TOKEN'] ?: ""
+      // Authentication is no longer required as per Mapbox's removal of download token requirement
+      // See: https://github.com/mapbox/mapbox-maps-flutter/issues/775
+      // Keeping this as optional for backward compatibility
+      def token = project.properties['MAPBOX_DOWNLOADS_TOKEN'] ?: System.getenv('RNMAPBOX_MAPS_DOWNLOAD_TOKEN')
+      if (token) {
+        authentication { basic(BasicAuthentication) }
+        credentials {
+          username = 'mapbox'
+          password = token
+        }
       }
     }
   }
@@ -371,7 +395,10 @@ export const addMapboxMavenRepo = (src: string): string =>
     comment: '//',
   }).contents;
 
-const withAndroidAppGradle: ConfigPlugin<MapboxPlugProps> = (config) =>
+const withAndroidAppGradle: ConfigPlugin<MapboxPlugProps> = (
+  config,
+  _props: MapboxPlugProps = {},
+) =>
   withAppBuildGradle(config, ({ modResults, ...exportedConfig }) => {
     if (modResults.language !== 'groovy') {
       WarningAggregator.addWarningAndroid(
@@ -387,7 +414,10 @@ const withAndroidAppGradle: ConfigPlugin<MapboxPlugProps> = (config) =>
     return { modResults, ...exportedConfig };
   });
 
-const withAndroidProjectGradle: ConfigPlugin<MapboxPlugProps> = (config) =>
+const withAndroidProjectGradle: ConfigPlugin<MapboxPlugProps> = (
+  config,
+  _props: MapboxPlugProps = {},
+) =>
   withProjectBuildGradle(config, ({ modResults, ...exportedConfig }) => {
     if (modResults.language !== 'groovy') {
       WarningAggregator.addWarningAndroid(
@@ -410,7 +440,7 @@ const withMapboxAndroid: ConfigPlugin<MapboxPlugProps> = (
     RNMapboxMapsDownloadToken,
     RNMapboxMapsVersion,
     RNMapboxMapsUseV11,
-  },
+  }: MapboxPlugProps = {},
 ) => {
   config = withAndroidProperties(config, {
     RNMapboxMapsImpl,
@@ -431,7 +461,7 @@ const withMapbox: ConfigPlugin<MapboxPlugProps> = (
     RNMapboxMapsVersion,
     RNMapboxMapsDownloadToken,
     RNMapboxMapsUseV11,
-  },
+  }: MapboxPlugProps = {},
 ) => {
   config = withMapboxAndroid(config, {
     RNMapboxMapsImpl,

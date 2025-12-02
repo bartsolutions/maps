@@ -31,16 +31,28 @@ jobs:
           path: maps-docs
       - uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20.19.4
       - uses: oven-sh/setup-bun@v1
         with:
           bun-version: latest
+      - name: Create dummy accesstoken file
+        run: echo 'dummytoken' > ./accesstoken
+        working-directory: maps/example
       - name: Install dependencies
         run: yarn install
       - name: Generate component docs into maps-docs repo
         run: node scripts/doc-generate.mjs
       - name: Generate example docs into maps-docs repo
         run: bun scripts/example-docs.ts
+      - name: Generate example app into maps-docs repo
+        run: |
+          cd example
+          echo $MAPBOX_WEB_ACCESS_TOKEN > accesstoken
+          yarn install
+          npx expo export -p web --output-dir ../../maps-docs/static/example-app
+        working-directory: maps
+        env:
+          MAPBOX_WEB_ACCESS_TOKEN: ${{ secrets.MAPBOX_WEB_ACCESS_TOKEN }}
       - name: Setup deploy key for github deploy
         uses: webfactory/ssh-agent@v0.5.0
         with:
@@ -49,6 +61,10 @@ jobs:
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git stash --include-untracked
+          git pull --rebase origin main
+          git stash pop || true
+          git log -1
           git add .
           git commit -m "Update docs from maps  rnmapbox/maps@${GITHUB_SHA::7}"
           git push origin main

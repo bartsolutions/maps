@@ -21,12 +21,18 @@ using namespace facebook::react;
     RNMBXCircleLayer *_view;
 }
 
+// Needed because of this: https://github.com/facebook/react-native/pull/37274
++ (void)load
+{
+  [super load];
+}
+
 - (instancetype)initWithFrame:(CGRect)frame
 {
   if (self = [super initWithFrame:frame]) {
     static const auto defaultProps = std::make_shared<const RNMBXCircleLayerProps>();
     _props = defaultProps;
-      [self prepareView];
+    [self prepareView];
   }
 
   return self;

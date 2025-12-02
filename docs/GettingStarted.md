@@ -2,20 +2,24 @@
 
 Congratulations, you successfully installed rnmapbox/maps! 🎉
 Where to go from here?
-You can head straight to [examples](/example) folder if you want to jump into the deep end.
+You can head straight to the [examples](/example) folder if you want to jump into the deep end.
 However, if you prefer an easier ramp-up, then make sure to stick around and check out the guides below.
 
-## Setting your accessToken
+## Installation
 
-In order to work, mapbox requires you to create an accessToken and set it in your app.
-If you haven't created one yet, make sure to sign up for an account [here](https://www.mapbox.com/signup/)
-You can create and manage your access tokens on your [Mapbox Account page](https://www.mapbox.com/account/)
-Once you have your accessToken, set it like this
+Please follow our install guides for the platforms you're interested in (iOS, Android, Expo): https://rnmapbox.github.io/docs/install
+
+## Setting your access token
+
+In order to work, Mapbox requires you to create an access token and set it in your app.
+If you haven't created one yet, make sure to sign up for an account [here](https://console.mapbox.com/).
+You can create and manage your access tokens on your [Mapbox account page](https://console.mapbox.com/account/access-tokens/)
+Once you have your access token, set it like this:
 
 ```js
-import MapboxGL from "@rnmapbox/maps";
+import Mapbox from "@rnmapbox/maps";
 
-MapboxGL.setAccessToken("<YOUR_ACCESSTOKEN>");
+Mapbox.setAccessToken("<YOUR_ACCESSTOKEN>");
 ```
 
 ## Setting connection status [Android only]
@@ -25,32 +29,30 @@ If you are hosting styles and sources on localhost, you might need to set the co
 Manually sets the connectivity state of the app, bypassing any checks to the ConnectivityManager. Set to `true` for connected, `false` for disconnected, and `null` for ConnectivityManager to determine.
 
 ```js
-import MapboxGL from "@rnmapbox/maps";
+import Mapbox from "@rnmapbox/maps";
 
-MapboxGL.setConnected(true);
+Mapbox.setConnected(true);
 ```
 
-## Disabling Telemetry
+## Disabling telemetry
 
-By default mapbox collects telemetry.
+By default Mapbox collects telemetry.
 If you would like to programmatically disable this within your app add the code below.
 
 ```js
-  componentDidMount() {
-    MapboxGL.setTelemetryEnabled(false);
-  }
+  Mapbox.setTelemetryEnabled(false);
 ```
 
-For more information on mapbox and telemetry: [https://www.mapbox.com/telemetry](https://www.mapbox.com/telemetry)
+For more information on Mapbox and telemetry: [https://www.mapbox.com/telemetry](https://www.mapbox.com/telemetry)
 
 ## Show a map
 
 ```js
 import React, { Component } from "react";
 import { StyleSheet, View } from "react-native";
-import MapboxGL from "@rnmapbox/maps";
+import Mapbox, {MapView} from "@rnmapbox/maps";
 
-MapboxGL.setAccessToken("<YOUR_ACCESSTOKEN>");
+Mapbox.setAccessToken("<YOUR_ACCESSTOKEN>");
 
 const styles = StyleSheet.create({
   page: {
@@ -70,15 +72,11 @@ const styles = StyleSheet.create({
 });
 
 export default class App extends Component {
-  componentDidMount() {
-    MapboxGL.setTelemetryEnabled(false);
-  }
-
   render() {
     return (
       <View style={styles.page}>
         <View style={styles.container}>
-          <MapboxGL.MapView style={styles.map} />
+          <MapView style={styles.map} />
         </View>
       </View>
     );

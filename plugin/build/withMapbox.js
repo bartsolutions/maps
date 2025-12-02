@@ -61,6 +61,8 @@ const addConstantBlock = (src, { RNMapboxMapsImpl, RNMapboxMapsVersion, RNMapbox
     }
     const newSrc = [];
     if (RNMapboxMapsDownloadToken) {
+        console.warn('⚠️ RNMapbox: RNMapboxMapsDownloadToken is deprecated. Use RNMAPBOX_MAPS_DOWNLOAD_TOKEN environment variable instead.');
+        console.warn('⚠️ RNMapbox: This token will be part of your Podfile. Be careful about committing it to source control.');
         newSrc.push(`$RNMapboxMapsDownloadToken = '${RNMapboxMapsDownloadToken}'`);
     }
     if (RNMapboxMapsImpl) {
@@ -115,7 +117,7 @@ exports.addMapboxInstallerBlock = addMapboxInstallerBlock;
  *
  * https://github.com/rnmapbox/maps/blob/main/ios/install.md#react-native--0600
  */
-const withCocoaPodsInstallerBlocks = (config, { RNMapboxMapsImpl, RNMapboxMapsVersion, RNMapboxMapsDownloadToken, RNMapboxMapsUseV11, }) => (0, config_plugins_1.withDangerousMod)(config, [
+const withCocoaPodsInstallerBlocks = (config, { RNMapboxMapsImpl, RNMapboxMapsVersion, RNMapboxMapsDownloadToken, RNMapboxMapsUseV11, } = {}) => (0, config_plugins_1.withDangerousMod)(config, [
     'ios',
     async (exportedConfig) => {
         const file = path_1.default.join(exportedConfig.modRequest.platformProjectRoot, 'Podfile');
@@ -129,9 +131,11 @@ const withCocoaPodsInstallerBlocks = (config, { RNMapboxMapsImpl, RNMapboxMapsVe
         return exportedConfig;
     },
 ]);
-const withAndroidPropertiesDownloadToken = (config, { RNMapboxMapsDownloadToken }) => {
+const withAndroidPropertiesDownloadToken = (config, { RNMapboxMapsDownloadToken } = {}) => {
     const key = 'MAPBOX_DOWNLOADS_TOKEN';
     if (RNMapboxMapsDownloadToken) {
+        console.warn('⚠️ WARNING: RNMapboxMapsDownloadToken is deprecated. Use RNMAPBOX_MAPS_DOWNLOAD_TOKEN environment variable instead.');
+        console.warn('⚠️ WARNING: This token will be part of your gradle.properties. Be careful about committing it to source control.');
         return (0, config_plugins_1.withGradleProperties)(config, (exportedConfig) => {
             exportedConfig.modResults = exportedConfig.modResults.filter((item) => !(item.type === 'property' && item.key === key));
             exportedConfig.modResults.push({
@@ -144,7 +148,7 @@ const withAndroidPropertiesDownloadToken = (config, { RNMapboxMapsDownloadToken 
     }
     return config;
 };
-const withAndroidPropertiesImpl2 = (config, { RNMapboxMapsImpl, RNMapboxMapsVersion, RNMapboxMapsUseV11 }) => {
+const withAndroidPropertiesImpl2 = (config, { RNMapboxMapsImpl, RNMapboxMapsVersion, RNMapboxMapsUseV11, } = {}) => {
     const keyValues = {
         expoRNMapboxMapsImpl: RNMapboxMapsImpl,
         expoRNMapboxMapsVersion: RNMapboxMapsVersion,
@@ -170,7 +174,7 @@ const withAndroidPropertiesImpl2 = (config, { RNMapboxMapsImpl, RNMapboxMapsVers
     }
     return config;
 };
-const withAndroidProperties = (config, { RNMapboxMapsImpl, RNMapboxMapsDownloadToken, RNMapboxMapsVersion, RNMapboxMapsUseV11, }) => {
+const withAndroidProperties = (config, { RNMapboxMapsImpl, RNMapboxMapsDownloadToken, RNMapboxMapsVersion, RNMapboxMapsUseV11, } = {}) => {
     config = withAndroidPropertiesDownloadToken(config, {
         RNMapboxMapsDownloadToken,
     });
@@ -207,10 +211,16 @@ allprojects {
   repositories {
     maven {
       url 'https://api.mapbox.com/downloads/v2/releases/maven'
-      authentication { basic(BasicAuthentication) }
-      credentials {
-        username = 'mapbox'
-        password = project.properties['MAPBOX_DOWNLOADS_TOKEN'] ?: ""
+      // Authentication is no longer required as per Mapbox's removal of download token requirement
+      // See: https://github.com/mapbox/mapbox-maps-flutter/issues/775
+      // Keeping this as optional for backward compatibility
+      def token = project.properties['MAPBOX_DOWNLOADS_TOKEN'] ?: System.getenv('RNMAPBOX_MAPS_DOWNLOAD_TOKEN')
+      if (token) {
+        authentication { basic(BasicAuthentication) }
+        credentials {
+          username = 'mapbox'
+          password = token
+        }
       }
     }
   }
@@ -246,7 +256,7 @@ const addMapboxMavenRepo = (src) => appendContents({
 }).contents;
 exports.addMapboxMavenRepo = addMapboxMavenRepo;
 exports._addMapboxMavenRepo = exports.addMapboxMavenRepo;
-const withAndroidAppGradle = (config) => (0, config_plugins_1.withAppBuildGradle)(config, ({ modResults, ...exportedConfig }) => {
+const withAndroidAppGradle = (config, _props = {}) => (0, config_plugins_1.withAppBuildGradle)(config, ({ modResults, ...exportedConfig }) => {
     if (modResults.language !== 'groovy') {
         config_plugins_1.WarningAggregator.addWarningAndroid('withMapbox', `Cannot automatically configure app build.gradle if it's not groovy`);
         return { modResults, ...exportedConfig };
@@ -254,7 +264,7 @@ const withAndroidAppGradle = (config) => (0, config_plugins_1.withAppBuildGradle
     modResults.contents = addLibCppFilter(modResults.contents);
     return { modResults, ...exportedConfig };
 });
-const withAndroidProjectGradle = (config) => (0, config_plugins_1.withProjectBuildGradle)(config, ({ modResults, ...exportedConfig }) => {
+const withAndroidProjectGradle = (config, _props = {}) => (0, config_plugins_1.withProjectBuildGradle)(config, ({ modResults, ...exportedConfig }) => {
     if (modResults.language !== 'groovy') {
         config_plugins_1.WarningAggregator.addWarningAndroid('withMapbox', `Cannot automatically configure app build.gradle if it's not groovy`);
         return { modResults, ...exportedConfig };
@@ -262,7 +272,7 @@ const withAndroidProjectGradle = (config) => (0, config_plugins_1.withProjectBui
     modResults.contents = (0, exports.addMapboxMavenRepo)(modResults.contents);
     return { modResults, ...exportedConfig };
 });
-const withMapboxAndroid = (config, { RNMapboxMapsImpl, RNMapboxMapsDownloadToken, RNMapboxMapsVersion, RNMapboxMapsUseV11, }) => {
+const withMapboxAndroid = (config, { RNMapboxMapsImpl, RNMapboxMapsDownloadToken, RNMapboxMapsVersion, RNMapboxMapsUseV11, } = {}) => {
     config = withAndroidProperties(config, {
         RNMapboxMapsImpl,
         RNMapboxMapsDownloadToken,
@@ -273,7 +283,7 @@ const withMapboxAndroid = (config, { RNMapboxMapsImpl, RNMapboxMapsDownloadToken
     config = withAndroidAppGradle(config, { RNMapboxMapsImpl });
     return config;
 };
-const withMapbox = (config, { RNMapboxMapsImpl, RNMapboxMapsVersion, RNMapboxMapsDownloadToken, RNMapboxMapsUseV11, }) => {
+const withMapbox = (config, { RNMapboxMapsImpl, RNMapboxMapsVersion, RNMapboxMapsDownloadToken, RNMapboxMapsUseV11, } = {}) => {
     config = withMapboxAndroid(config, {
         RNMapboxMapsImpl,
         RNMapboxMapsVersion,

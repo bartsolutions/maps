@@ -20,6 +20,11 @@ using namespace facebook::react;
     RNMBXVectorSource *_view;
 }
 
+// Needed because of this: https://github.com/facebook/react-native/pull/37274
++ (void)load
+{
+  [super load];
+}
 
 - (instancetype)initWithFrame:(CGRect)frame
 {
@@ -119,7 +124,7 @@ using namespace facebook::react;
     }
     id hasPressListener = RNMBXConvertFollyDynamicToId(newProps.hasPressListener);
     if (hasPressListener != nil) {
-        _view.hasPressListener = hasPressListener;
+        _view.hasPressListener = [hasPressListener boolValue];
     }
     id hitbox = RNMBXConvertFollyDynamicToId(newProps.hitbox);
     if (hitbox != nil) {

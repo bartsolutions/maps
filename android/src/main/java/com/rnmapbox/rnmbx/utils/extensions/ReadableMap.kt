@@ -17,6 +17,7 @@ import com.mapbox.geojson.MultiPolygon
 import com.mapbox.geojson.Point
 import com.mapbox.geojson.Polygon
 import com.mapbox.maps.EdgeInsets
+import com.rnmapbox.rnmbx.rncompat.readable_map.*
 import com.rnmapbox.rnmbx.utils.ConvertUtils
 import com.rnmapbox.rnmbx.utils.Logger
 
@@ -24,7 +25,7 @@ fun ReadableMap.forEach(action: (String, Any) -> Unit) {
     val iterator = this.entryIterator
     while (iterator.hasNext()) {
         val next = iterator.next()
-        action(next.key, next.value)
+        next.value?.let { action(next.key, it) } ?: Logger.d("ReadableMap", "Skipping null value for key: ${next.key}")
     }
 }
 fun ReadableMap.getIfDouble(key: String): Double? {

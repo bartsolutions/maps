@@ -10,7 +10,6 @@
 package com.facebook.react.viewmanagers;
 
 import android.view.View;
-
 public interface RNMBXMarkerViewContentManagerInterface<T extends View> {
   // No props
 }

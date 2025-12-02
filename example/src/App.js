@@ -1,8 +1,9 @@
 import React from 'react';
 import Mapbox from '@rnmapbox/maps';
-import { StyleSheet, Text, View, LogBox, SafeAreaView } from 'react-native';
+import { StyleSheet, Text, View, LogBox } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { NavigationContainer } from '@react-navigation/native';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 import sheet from './styles/sheet';
 import colors from './styles/colors';
@@ -10,6 +11,7 @@ import { IS_ANDROID } from './utils';
 import config from './utils/config';
 import { Group, Item } from './scenes/GroupAndItem';
 import { ScreenWithoutMap } from './scenes/ScreenWithoutMap';
+import MapInModal from './examples/Map/MapInModal';
 
 LogBox.ignoreLogs([
   'Warning: isMounted(...) is deprecated',
@@ -23,7 +25,17 @@ const styles = StyleSheet.create({
   },
 });
 
+Mapbox.addCustomHeader('Custom-Header', 'global-header-value');
+Mapbox.addCustomHeader('Mapbox-Api-Header-Value', 'api-header-value', {
+  urlRegexp: '^https:\/\/api\.mapbox\.com\/(.*)$',
+});
+// This header will not be added to requests to api.mapbox.com
+Mapbox.addCustomHeader('Other-Api-Header-Value', 'other-api-header-value', {
+  urlRegexp: '^https:\/\/api\.other\.com\/(.*)$',
+});
 Mapbox.setAccessToken(config.get('accessToken'));
+
+console.log('### App.js - Mapbox:', Mapbox);
 
 const Stack = createNativeStackNavigator();
 
@@ -36,16 +48,26 @@ function AppStackNavigator() {
       <Stack.Screen name="Group" component={Group} />
       <Stack.Screen name="Item" component={Item} />
       <Stack.Screen name="ScreenWithoutMap" component={ScreenWithoutMap} />
+      <Stack.Group
+        screenOptions={() => ({
+          presentation: 'modal',
+        })}
+      >
+        <Stack.Screen name="MapInModal" component={MapInModal} />
+      </Stack.Group>
     </Stack.Navigator>
   );
 }
 
 const AppContainer = () => (
-  <NavigationContainer>
-    <AppStackNavigator />
-  </NavigationContainer>
+  <SafeAreaProvider>
+    <NavigationContainer>
+      <AppStackNavigator />
+    </NavigationContainer>
+  </SafeAreaProvider>
 );
 class App extends React.Component {
+  // @ts-ignore - Parameter type requires TypeScript annotation
   constructor(props) {
     super(props);
 
@@ -74,7 +96,6 @@ class App extends React.Component {
       return (
         <SafeAreaView
           style={[sheet.matchParent, { backgroundColor: colors.primary.blue }]}
-          forceInset={{ top: 'always' }}
         >
           <View style={sheet.matchParent}>
             <Text style={styles.noPermissionsText}>

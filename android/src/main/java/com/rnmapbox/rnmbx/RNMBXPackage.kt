@@ -34,17 +34,20 @@ import com.rnmapbox.rnmbx.components.styles.layers.RNMBXHeatmapLayerManager
 import com.rnmapbox.rnmbx.components.styles.layers.RNMBXLineLayerManager
 import com.rnmapbox.rnmbx.components.styles.layers.RNMBXModelLayerManager
 import com.rnmapbox.rnmbx.components.styles.layers.RNMBXRasterLayerManager
+import com.rnmapbox.rnmbx.components.styles.layers.RNMBXRasterParticleLayerManager
 import com.rnmapbox.rnmbx.components.styles.layers.RNMBXSkyLayerManager
 import com.rnmapbox.rnmbx.components.styles.layers.RNMBXSymbolLayerManager
 import com.rnmapbox.rnmbx.components.styles.light.RNMBXLightManager
 import com.rnmapbox.rnmbx.components.styles.model.RNMBXModelsManager
 import com.rnmapbox.rnmbx.components.styles.sources.RNMBXImageSourceManager
+import com.rnmapbox.rnmbx.components.styles.sources.RNMBXRasterArraySourceManager
 import com.rnmapbox.rnmbx.components.styles.sources.RNMBXRasterDemSourceManager
 import com.rnmapbox.rnmbx.components.styles.sources.RNMBXRasterSourceManager
 import com.rnmapbox.rnmbx.components.styles.sources.RNMBXShapeSourceManager
 import com.rnmapbox.rnmbx.components.styles.sources.RNMBXShapeSourceModule
 import com.rnmapbox.rnmbx.components.styles.sources.RNMBXVectorSourceManager
 import com.rnmapbox.rnmbx.components.styles.terrain.RNMBXTerrainManager
+import com.rnmapbox.rnmbx.events.RNMBXCameraGestureObserverManager
 import com.rnmapbox.rnmbx.modules.RNMBXLocationModule
 import com.rnmapbox.rnmbx.modules.RNMBXNavigationModule
 import com.rnmapbox.rnmbx.modules.RNMBXLogging
@@ -125,6 +128,7 @@ class RNMBXPackage : TurboReactPackage() {
         managers.add(RNMBXMapViewManager(reactApplicationContext, getViewTagResolver(reactApplicationContext, "RNMBXMapViewManager")))
         managers.add(RNMBXStyleImportManager(reactApplicationContext))
         managers.add(RNMBXModelsManager(reactApplicationContext))
+        managers.add(RNMBXCameraGestureObserverManager(reactApplicationContext))
 
         // annotations
         managers.add(RNMBXMarkerViewManager(reactApplicationContext))
@@ -142,6 +146,9 @@ class RNMBXPackage : TurboReactPackage() {
             ))
         managers.add(RNMBXRasterDemSourceManager(reactApplicationContext))
         managers.add(RNMBXRasterSourceManager(reactApplicationContext))
+        if (RNMBXRasterArraySourceManager.isImplemented) {
+            managers.add(RNMBXRasterArraySourceManager(reactApplicationContext))
+        }
         managers.add(RNMBXImageSourceManager())
 
         // images
@@ -156,6 +163,9 @@ class RNMBXPackage : TurboReactPackage() {
         managers.add(RNMBXCircleLayerManager())
         managers.add(RNMBXSymbolLayerManager())
         managers.add(RNMBXRasterLayerManager())
+        if (RNMBXRasterParticleLayerManager.isImplemented) {
+            managers.add(RNMBXRasterParticleLayerManager())
+        }
         managers.add(RNMBXSkyLayerManager())
         managers.add(RNMBXTerrainManager())
         managers.add(RNMBXAtmosphereManager())
@@ -186,7 +196,7 @@ class RNMBXPackage : TurboReactPackage() {
                 false,  // needsEagerInit
                 true,  // hasConstants
                 false,  // isCxxModule
-                false // isTurboModule
+                isTurboModule // isTurboModule
             )
             moduleInfos[RNMBXOfflineModule.REACT_CLASS] = ReactModuleInfo(
                 RNMBXOfflineModule.REACT_CLASS,

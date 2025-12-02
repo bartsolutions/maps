@@ -11,6 +11,8 @@
 #import <react/renderer/components/rnmapbox_maps_specs/Props.h>
 #import <react/renderer/components/rnmapbox_maps_specs/RCTComponentViewHelpers.h>
 
+#import "RNMBXFabricPropConvert.h"
+
 using namespace facebook::react;
 
 @interface RNMBXMarkerViewComponentView () <RCTRNMBXMarkerViewViewProtocol>
@@ -18,6 +20,12 @@ using namespace facebook::react;
 
 @implementation RNMBXMarkerViewComponentView {
     RNMBXMarkerView *_view;
+}
+
+// Needed because of this: https://github.com/facebook/react-native/pull/37274
++ (void)load
+{
+  [super load];
 }
 
 - (instancetype)initWithFrame:(CGRect)frame
@@ -62,28 +70,21 @@ using namespace facebook::react;
 
 - (void)updateProps:(const Props::Shared &)props oldProps:(const Props::Shared &)oldProps
 {
-  const auto &newProps = static_cast<const RNMBXMarkerViewProps &>(*props);
-    
-    id coordinate = RNMBXConvertFollyDynamicToId(newProps.coordinate);
+  const auto &newViewProps = static_cast<const RNMBXMarkerViewProps &>(*props);
+  const auto &oldViewProps =
+      static_cast<const RNMBXMarkerViewProps &>(*oldProps);
+
+    id coordinate = RNMBXConvertFollyDynamicToId(newViewProps.coordinate);
     if (coordinate != nil) {
         _view.coordinate = coordinate;
     }
-    id anchor = RNMBXConvertFollyDynamicToId(newProps.anchor);
+    id anchor = RNMBXConvertFollyDynamicToId(newViewProps.anchor);
     if (anchor != nil) {
         _view.anchor = anchor;
     }
-    id allowOverlap = RNMBXConvertFollyDynamicToId(newProps.allowOverlap);
-    if (allowOverlap != nil) {
-        _view.allowOverlap = allowOverlap;
-    }
-    id allowOverlapWithPuck = RNMBXConvertFollyDynamicToId(newProps.allowOverlapWithPuck);
-    if (allowOverlapWithPuck != nil) {
-        _view.allowOverlapWithPuck = allowOverlapWithPuck;
-    }
-    id isSelected = RNMBXConvertFollyDynamicToId(newProps.isSelected);
-    if (isSelected != nil) {
-        _view.isSelected = isSelected;
-    }
+    RNMBX_REMAP_OPTIONAL_PROP_BOOL(allowOverlap, allowOverlap);
+    RNMBX_REMAP_OPTIONAL_PROP_BOOL(allowOverlapWithPuck, allowOverlapWithPuck);
+    RNMBX_REMAP_OPTIONAL_PROP_BOOL(isSelected, isSelected);
 
   [super updateProps:props oldProps:oldProps];
 }
@@ -104,6 +105,7 @@ using namespace facebook::react;
         layoutMetrics.contentInsets,
         layoutMetrics.borderWidth,
         layoutMetrics.displayType,
+        layoutMetrics.positionType, // RN074
         layoutMetrics.layoutDirection,
         layoutMetrics.wasLeftAndRightSwapped,
         layoutMetrics.pointScaleFactor,

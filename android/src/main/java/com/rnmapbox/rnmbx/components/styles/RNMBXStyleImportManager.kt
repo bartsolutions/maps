@@ -11,6 +11,7 @@ import com.facebook.react.viewmanagers.RNMBXStyleImportManagerInterface
 import com.rnmapbox.rnmbx.components.AbstractEventEmitter
 import com.rnmapbox.rnmbx.components.mapview.RNMBXMapView
 import com.mapbox.bindgen.Value
+import com.rnmapbox.rnmbx.rncompat.dynamic.*
 import com.rnmapbox.rnmbx.utils.Logger
 import com.rnmapbox.rnmbx.utils.extensions.toValueHashMap
 import org.json.JSONObject
@@ -51,7 +52,12 @@ class RNMBXStyleImportManager(context: ReactApplicationContext) :
         if (value.type != ReadableType.Map) {
             Logger.e(REACT_CLASS, "config expected Map but received: ${value.type}")
         } else {
-            view.config = value.asMap().toValueHashMap()
+            val mapValue = value.asMap()
+            if (mapValue == null) {
+                Logger.e(REACT_CLASS, "config map is null")
+                return
+            }
+            view.config = mapValue.toValueHashMap()
         }
     }
 }

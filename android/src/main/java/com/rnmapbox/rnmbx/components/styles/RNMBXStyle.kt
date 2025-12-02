@@ -32,7 +32,7 @@ class RNMBXStyle(private val mContext: Context, reactStyle: ReadableMap?, map: M
     fun getStyleValueForKey(styleKey: String): RNMBXStyleValue {
         val styleValueConfig = mReactStyle!!.getMap(styleKey)
         if (styleValueConfig != null) {
-            return RNMBXStyleValue(styleValueConfig)
+            return RNMBXStyleValue(styleKey, styleValueConfig)
         } else {
             Logger.e("RNMBXStyle", "Value for ${styleKey} not found")
             throw Exception("RNMBXStyle - Value for ${styleKey} not found")
@@ -58,7 +58,7 @@ class RNMBXStyle(private val mContext: Context, reactStyle: ReadableMap?, map: M
             )
         )
         val task = DownloadMapImageTask(mContext, mMap, null, callback)
-        task.execute(*images)
+        task.execute(images)
     }
 
     init {

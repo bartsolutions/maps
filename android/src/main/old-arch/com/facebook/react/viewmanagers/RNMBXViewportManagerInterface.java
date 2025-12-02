@@ -11,7 +11,6 @@ package com.facebook.react.viewmanagers;
 
 import android.view.View;
 import com.facebook.react.bridge.Dynamic;
-
 public interface RNMBXViewportManagerInterface<T extends View> {
   void setTransitionsToIdleUponUserInteraction(T view, Dynamic value);
   void setHasStatusChanged(T view, boolean value);

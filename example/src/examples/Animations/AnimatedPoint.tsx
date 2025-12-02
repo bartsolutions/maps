@@ -1,3 +1,4 @@
+import { memo, useRef, useState, useMemo } from 'react';
 import {
   Camera,
   Logger,
@@ -7,10 +8,11 @@ import {
   __experimental,
 } from '@rnmapbox/maps';
 import { Position } from 'geojson';
-import React, { memo, useMemo, useRef, useState } from 'react';
 import { Divider, Slider, Text } from '@rneui/base';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { View, Button, StyleProp, ViewStyle } from 'react-native';
+
+import type { ExampleWithMetadata } from '../common/ExampleMetadata';
 
 Logger.setLogLevel('verbose');
 
@@ -26,7 +28,6 @@ const AnimatedPoint = memo(() => {
 
   const animator = useMemo(() => {
     return new __experimental.MovePointShapeAnimator(basePosition);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const contents = useMemo(() => {
@@ -56,8 +57,8 @@ const AnimatedPoint = memo(() => {
               title={'Randomize'}
               onPress={() => {
                 const nextPosition = [
-                  basePosition[0] + (Math.random() - 0.5) * 0.005,
-                  basePosition[1] + (Math.random() - 0.5) * 0.005,
+                  basePosition[0]! + (Math.random() - 0.5) * 0.005,
+                  basePosition[1]! + (Math.random() - 0.5) * 0.005,
                 ];
                 currentPosition.current = nextPosition;
                 animator.moveTo({
@@ -138,3 +139,11 @@ const AnimatedPoint = memo(() => {
 });
 
 export default AnimatedPoint;
+
+/** @type ExampleWithMetadata['metadata'] */
+const metadata = {
+  title: 'Animated point',
+  tags: [],
+  docs: `Animated Point (Native Animator)`,
+};
+(AnimatedPoint as unknown as ExampleWithMetadata).metadata = metadata;

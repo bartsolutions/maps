@@ -7,7 +7,7 @@ import { CircleLayerStyle } from '../Mapbox';
 import Annotation from './Annotation';
 import CircleLayer from './CircleLayer';
 import HeadingIndicator from './HeadingIndicator';
-import NativeUserLocation from './LocationPuck';
+import LocationPuck from './LocationPuck';
 
 const mapboxBlue = 'rgba(51, 181, 229, 100)';
 
@@ -53,7 +53,12 @@ const normalIcon = (
     style={layerStyles.normal.foreground}
   />,
   ...(showsUserHeadingIndicator && typeof heading === 'number'
-    ? [HeadingIndicator({ heading, key: 'mapboxUserLocationHeadingIndicator' })]
+    ? [
+        <HeadingIndicator
+          heading={heading}
+          key="mapboxUserLocationHeadingIndicator"
+        />,
+      ]
     : []),
 ];
 
@@ -100,7 +105,7 @@ type Props = {
   onUpdate?: (location: Location) => void;
 
   /**
-   * @deprecated use NativeUserLocation component instead of UserLocationRenderMode.Native
+   * @deprecated use LocationPuck component instead of UserLocationRenderMode.Native
    * Which render mode to use.
    */
   renderMode?: UserLocationRenderMode;
@@ -258,7 +263,7 @@ class UserLocation extends React.Component<Props, UserLocationState> {
       androidRenderMode,
       iosShowsUserHeadingIndicator: showsUserHeadingIndicator,
     };
-    return <NativeUserLocation {...props} />;
+    return <LocationPuck {...props} />;
   }
 
   render() {

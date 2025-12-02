@@ -12,7 +12,7 @@
 
 #import "rnmapbox_maps-Swift.pre.h"
 
-#import "RCTFollyConvert.h"
+#import "RNMBXFollyConvert.h"
 
 
 // TODO: use generated RNMBXViewportEventEmitter, but need 0.73+ for dynamic support
@@ -55,6 +55,12 @@ NSNumber* convertDynamicToOptional_boolean(const folly::dynamic &dyn, NSString* 
 
 @implementation RNMBXViewportComponentView {
     RNMBXViewport *_view;
+}
+
+// Needed because of this: https://github.com/facebook/react-native/pull/37274
++ (void)load
+{
+  [super load];
 }
 
 - (instancetype)initWithFrame:(CGRect)frame

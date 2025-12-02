@@ -22,7 +22,7 @@ string
 ```
 A string that uniquely identifies the source.
 
-  _defaults to:_ `MapboxGL.StyleSource.DefaultSourceID`
+  _defaults to:_ `Mapbox.StyleSource.DefaultSourceID`
 
   
 ### existing
@@ -30,7 +30,7 @@ A string that uniquely identifies the source.
 ```tsx
 boolean
 ```
-The id refers to en existing source in the style. Does not create a new source.
+The id refers to an existing source in the style. Does not create a new source.
 
 
   
@@ -110,6 +110,17 @@ source is part of a map view’s style and the map view’s attribution button i
 React.ReactElement | React.ReactElement[]
 ```
 FIX ME NO DESCRIPTION
+
+
+  
+### sourceBounds
+
+```tsx
+Array
+```
+An array containing the longitude and latitude of the southwest and northeast corners of
+the source's bounding box in the following order: `[sw.lng, sw.lat, ne.lng, ne.lat]`.
+When this property is included in a source, no tiles outside of the given bounds are requested by Mapbox GL.
 
 
   

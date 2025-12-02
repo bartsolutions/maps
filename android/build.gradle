@@ -1,10 +1,19 @@
 def defaultMapboxMapsImpl = "mapbox"
-def defaultMapboxMapsVersion = "10.16.4"
-def defaultMapboxNavigationVersion = "2.13.0"
+def defaultMapboxNavigationVersion = "2.21.0"
+
+def getDefaultMapboxMapsVersion() {
+    def packageJson = new groovy.json.JsonSlurper().parseText(
+        new File(projectDir.getPath(), "../package.json").text
+    )
+    return packageJson.mapbox.android
+}
+
+def defaultMapboxMapsVersion = getDefaultMapboxMapsVersion()
 
 def safeExtGet(prop, fallback) {
     rootProject.ext.has(prop) ? rootProject.ext.get(prop) : fallback
 }
+
 
 def isNewArchitectureEnabled() {
     // To opt-in for the New Architecture, you can either:
@@ -12,6 +21,10 @@ def isNewArchitectureEnabled() {
     // - Invoke gradle with `-newArchEnabled=true`
     // - Set an environment variable `ORG_GRADLE_PROJECT_newArchEnabled=true`
     return project.hasProperty("newArchEnabled") && project.newArchEnabled == "true"
+}
+
+def getCoroutinesVersion(kotlinVersion) {
+    return kotlinVersion >= '1.9' ? '1.8.0' : '1.6.4'
 }
 
 // expo plugin
@@ -22,15 +35,19 @@ if (rootProject.ext.has('expoRNMapboxMapsVersion')) {
     rootProject.ext.set('RNMapboxMapsVersion', rootProject.ext.get('expoRNMapboxMapsVersion'))
 }
 
-
 buildscript {
   repositories {
     google()
     mavenCentral()
   }
 
+  ext {
+    rnmapboxDefaultKotlinVersion = '1.7.21'
+  }
+
+  project.ext.set("kotlinVersion", rootProject.ext.has('kotlinVersion') ? rootProject.ext.get('kotlinVersion') : rnmapboxDefaultKotlinVersion)
   dependencies {
-    classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${rootProject.ext.has('kotlinVersion') ? rootProject.ext.get('kotlinVersion') : '1.6.21'}"
+      classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${project.kotlinVersion}"
   }
 }
 
@@ -63,12 +80,144 @@ android {
         sourceSets {
             main {
                 java.srcDirs = ['src/main/java']
-                def majorMapboxVersion = safeExtGet("RNMapboxMapsVersion", defaultMapboxMapsVersion).split("\\.")[0] as Integer
+                def mapboxVersion = safeExtGet("RNMapboxMapsVersion", defaultMapboxMapsVersion)
+                def majorMapboxVersion = mapboxVersion.split("\\.")[0] as Integer
                 if (majorMapboxVersion >= 11) {
                     java.srcDirs += 'src/main/mapbox-v11-compat/v11'
                 } else {
+                    logger.warn("⚠️ RNMapbox DEPRECATION WARNING: Mapbox v10.x is deprecated and will not receive active support.")
+                    logger.warn("⚠️ RNMapbox: Please upgrade to Mapbox v11.x for continued support and updates.")
+                    logger.warn("⚠️ RNMapbox: For sponsor-only support for v10.x: https://github.com/sponsors/rnmapbox")
                     java.srcDirs += 'src/main/mapbox-v11-compat/v10'
                 }
+                java.srcDirs += 'src/main/rn-compat/rn75'
+
+                // Adapted from react-native-screens for consistency
+                // https://github.com/software-mansion/react-native-screens/blob/main/android/build.gradle
+                def resolveReactNativeDirectory = {
+                    // 1. User-defined path
+                    def userDefinedRnDirPath = safeExtGet("REACT_NATIVE_NODE_MODULES_DIR", null)
+                    if (userDefinedRnDirPath != null) {
+                        return file(userDefinedRnDirPath)
+                    }
+                    
+                    // 2. Standard monorepo location
+                    def standardRnDirFile = file("$rootDir/../node_modules/react-native/")
+                    if (standardRnDirFile.exists()) {
+                        return standardRnDirFile
+                    }
+                    
+                    // 3. Legacy location
+                    def legacyRnDirFile = file("$projectDir/../node_modules/react-native/")
+                    if (legacyRnDirFile.exists()) {
+                        return legacyRnDirFile
+                    }
+                    
+                    // 4. Try Node resolution as fallback
+                    try {
+                        def maybeRnPackagePath = providers.exec {
+                            workingDir(rootDir)
+                            commandLine("node", "--print", "require.resolve('react-native/package.json')")
+                        }.standardOutput.asText.get().trim()
+                        
+                        if (maybeRnPackagePath != null && !maybeRnPackagePath.isBlank()) {
+                            def maybeRnPackageFile = file(maybeRnPackagePath)
+                            if (maybeRnPackageFile.exists()) {
+                                return maybeRnPackageFile.parentFile
+                            }
+                        }
+                    } catch (Exception e) {
+                        logger.debug("@rnmapbox/maps: Node resolution for react-native failed: ${e.message}")
+                    }
+                    
+                    return null
+                }
+                
+                def detectReactNativeVersion = {
+                    def rnDir = resolveReactNativeDirectory()
+                    if (rnDir == null) {
+                        return null
+                    }
+                    
+                    // Try gradle.properties first (like react-native-screens)
+                    def gradlePropertiesFile = file("$rnDir/ReactAndroid/gradle.properties")
+                    if (gradlePropertiesFile.exists()) {
+                        try {
+                            def reactProperties = new Properties()
+                            gradlePropertiesFile.withInputStream { reactProperties.load(it) }
+                            def version = reactProperties.getProperty("VERSION_NAME")
+                            if (version != null) {
+                                return version
+                            }
+                        } catch (Exception e) {
+                            logger.debug("@rnmapbox/maps: Failed to read gradle.properties: ${e.message}")
+                        }
+                    }
+                    
+                    // Fallback to package.json
+                    def packageJsonFile = file("$rnDir/package.json")
+                    if (packageJsonFile.exists()) {
+                        try {
+                            def packageJson = new groovy.json.JsonSlurper().parseText(packageJsonFile.text)
+                            return packageJson.version
+                        } catch (Exception e) {
+                            logger.debug("@rnmapbox/maps: Failed to read package.json: ${e.message}")
+                        }
+                    }
+                    
+                    return null
+                }
+                
+                // Add lifecycle compatibility source sets
+                // Priority order:
+                // 1. User-defined override (RNMapboxMapsLifecycleCompat)
+                // 2. React Native version detection (0.77+ uses new API)
+                // 3. Conservative default (v25 for better compatibility)
+                
+                def lifecycleCompat = safeExtGet("RNMapboxMapsLifecycleCompat", null)
+                
+                if (lifecycleCompat == "v25" || lifecycleCompat == "old") {
+                    logger.info("@rnmapbox/maps: Using v25 lifecycle compatibility (ViewTreeLifecycleOwner.set) - user override")
+                    java.srcDirs += 'src/main/lifecycle-compat/v25'
+                } else if (lifecycleCompat == "v26" || lifecycleCompat == "new") {
+                    logger.info("@rnmapbox/maps: Using v26 lifecycle compatibility (setViewTreeLifecycleOwner) - user override")
+                    java.srcDirs += 'src/main/lifecycle-compat/v26'
+                } else {
+                    // Auto-detect based on React Native version
+                    def rnVersion = null
+                    try {
+                        rnVersion = detectReactNativeVersion()
+                    } catch (Exception e) {
+                        logger.debug("@rnmapbox/maps: Failed to detect React Native version: ${e.message}")
+                    }
+                    
+                    if (rnVersion != null) {
+                        try {
+                            def versionParts = rnVersion.split("\\.")
+                            def majorVersion = versionParts[0].toInteger()
+                            def minorVersion = versionParts[1].toInteger()
+                            
+                            // React Native < 0.77 needs the old lifecycle API
+                            if (majorVersion == 0 && minorVersion < 77) {
+                                logger.info("@rnmapbox/maps: Detected React Native ${rnVersion} - using v25 lifecycle compatibility (old API)")
+                                java.srcDirs += 'src/main/lifecycle-compat/v25'
+                            } else {
+                                logger.info("@rnmapbox/maps: Detected React Native ${rnVersion} - using v26 lifecycle compatibility (new API)")
+                                java.srcDirs += 'src/main/lifecycle-compat/v26'
+                            }
+                        } catch (Exception e) {
+                            logger.warn("@rnmapbox/maps: Failed to parse React Native version '${rnVersion}', defaulting to v26 compatibility")
+                            java.srcDirs += 'src/main/lifecycle-compat/v26'
+                        }
+                    } else {
+                        // Cannot detect RN version, default to new API (v26) for future compatibility
+                        def targetSdk = safeExtGet("targetSdkVersion", 28)
+                        logger.info("@rnmapbox/maps: Unable to detect React Native version, using v26 lifecycle compatibility (new API, targetSdk=${targetSdk})")
+                        logger.info("@rnmapbox/maps: If you encounter issues with RN < 0.78, set RNMapboxMapsLifecycleCompat='v25' in your app's android/build.gradle ext block")
+                        java.srcDirs += 'src/main/lifecycle-compat/v26'
+                    }
+                }
+
                 if (safeExtGet("RNMapboxMapsUseV11", false)) {
                     logger.warn("RNMapboxMapsUseV11 is deprecated, just set RNMapboxMapsVersion to 11.*")
                 }
@@ -89,6 +238,9 @@ android {
     }
 
     if (!isNewArchitectureEnabled()) {
+        logger.warn("⚠️ RNMapbox DEPRECATION WARNING: Old React Native Architecture (Paper/bridge) is deprecated and will not receive active support.")
+        logger.warn("⚠️ RNMapbox: Please upgrade to New Architecture (Fabric/TurboModules) for continued support and updates.")
+        logger.warn("⚠️ RNMapbox: For sponsor-only support for old architecture: https://github.com/sponsors/rnmapbox")
         sourceSets {
             main {
                 java.srcDirs += 'src/main/old-arch'
@@ -143,25 +295,41 @@ dependencies {
     // React Native
     implementation "com.facebook.react:react-native:+"
 
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:${safeExtGet('kotlinxCoroutinesCoreVersion', getCoroutinesVersion(project.kotlinVersion))}"
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:${safeExtGet('kotlinxCoroutinesAndroidVersion', getCoroutinesVersion(project.kotlinVersion))}"
+
     // Mapbox SDK
     customizableDependencies('RNMapboxMapsLibs') {
         if (safeExtGet("RNMapboxMapsImpl", defaultMapboxMapsImpl) == "mapbox") {
-            implementation "com.mapbox.maps:android:${safeExtGet("RNMapboxMapsVersion", defaultMapboxMapsVersion)}"
-            implementation "com.mapbox.navigation:android:${safeExtGet("RNMapboxNavigationVersion", defaultMapboxNavigationVersion)}"
+            def targetSdk = safeExtGet("targetSdkVersion", 28)
+            def mapboxVersion = safeExtGet("RNMapboxMapsVersion", defaultMapboxMapsVersion)
+            def mapboxNavigationVersion = safeExtGet("RNMapboxNavigationVersion", defaultMapboxNavigationVersion)
+            
+            // Use NDK27 variant for Android 15+ (API 35+) to support 16KB page size
+            // Required by Google Play for apps targeting Android 15+ by November 1, 2025
+            // See: https://github.com/rnmapbox/maps/issues/3896
+            // Mapbox Docs: https://docs.mapbox.com/android/maps/guides/#ndk-27
+            if (targetSdk >= 35) {
+                implementation "com.mapbox.maps:android-ndk27:${mapboxVersion}"
+                implementation "com.mapbox.navigation:android-ndk27:${mapboxNavigationVersion}"
+            } else {
+                implementation "com.mapbox.maps:android:${mapboxVersion}"
+                implementation "com.mapbox.navigation:android:${mapboxNavigationVersion}"
+            }
             implementation 'com.mapbox.mapboxsdk:mapbox-sdk-turf:6.11.0'
             implementation 'androidx.asynclayoutinflater:asynclayoutinflater:1.0.0'
         } else {
             msg = '@rnmapbox/maps: RNMapboxMapsImpl has invalid value - only mapbox supported - see https://github.com/rnmapbox/maps/wiki/Deprecated-RNMapboxImpl-Maplibre#android'
             logger.error(msg)
-            throw new GradleException(msg) 
+            throw new GradleException(msg)
         }
     }
 
     // Dependencies
     customizableDependencies('RNMapboxMapsSupportLibs') {
-        implementation "com.android.support:support-vector-drawable:28.0.0"
+        //implementation "com.android.support:support-vector-drawable:28.0.0"
         implementation "com.android.support:support-annotations:28.0.0"
-        implementation "com.android.support:appcompat-v7:28.0.0"
+        //implementation "com.android.support:appcompat-v7:28.0.0"
     }
     customizableDependencies('RNMapboxMapsOkHTTPLibs') {
         implementation "com.squareup.okhttp3:okhttp:4.9.0"

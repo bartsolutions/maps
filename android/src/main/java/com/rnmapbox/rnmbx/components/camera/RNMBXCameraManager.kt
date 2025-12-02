@@ -13,9 +13,11 @@ import com.rnmapbox.rnmbx.utils.ViewTagResolver
 import com.rnmapbox.rnmbx.utils.extensions.asBooleanOrNull
 import com.rnmapbox.rnmbx.utils.extensions.asDoubleOrNull
 import com.rnmapbox.rnmbx.utils.extensions.asStringOrNull
+import com.rnmapbox.rnmbx.rncompat.dynamic.*
+import com.rnmapbox.rnmbx.utils.Logger
 
 class RNMBXCameraManager(private val mContext: ReactApplicationContext, val viewTagResolver: ViewTagResolver) :
-    AbstractEventEmitter<RNMBXCamera?>(
+    AbstractEventEmitter<RNMBXCamera>(
         mContext
     ), RNMBXCameraManagerInterface<RNMBXCamera> {
     override fun customEvents(): Map<String, String>? {
@@ -33,7 +35,12 @@ class RNMBXCameraManager(private val mContext: ReactApplicationContext, val view
     @ReactProp(name = "stop")
     override fun setStop(camera: RNMBXCamera, map: Dynamic) {
         if (!map.isNull) {
-            val stop = fromReadableMap(mContext, map.asMap(), null)
+            val mapValue = map.asMap()
+            if (mapValue == null || mapValue.keySetIterator().hasNextKey().not()) {
+                Logger.e("RNMBXCameraManager", "stop map is null or empty")
+                return
+            }
+            val stop = fromReadableMap(mContext, mapValue, null)
             camera.setStop(stop)
         }
     }
@@ -41,7 +48,12 @@ class RNMBXCameraManager(private val mContext: ReactApplicationContext, val view
     @ReactProp(name = "defaultStop")
     override fun setDefaultStop(camera: RNMBXCamera, map: Dynamic) {
         if (!map.isNull) {
-            val stop = fromReadableMap(mContext, map.asMap(), null)
+            val mapValue = map.asMap()
+            if (mapValue == null) {
+                Logger.e("RNMBXCameraManager", "defaultStop map is null")
+                return
+            }
+            val stop = fromReadableMap(mContext, mapValue, null)
             camera.setDefaultStop(stop)
         }
     }
@@ -94,13 +106,23 @@ class RNMBXCameraManager(private val mContext: ReactApplicationContext, val view
 
     @ReactProp(name = "followPadding")
     override fun setFollowPadding(camera: RNMBXCamera, value: Dynamic) {
-        camera.setFollowPadding(value.asMap())
+        val mapValue = value.asMap()
+        if (mapValue == null) {
+            Logger.e("RNMBXCameraManager", "followPadding map is null")
+            return
+        }
+        camera.setFollowPadding(mapValue)
     }
 
     @ReactProp(name = "maxBounds")
     override fun setMaxBounds(camera: RNMBXCamera, value: Dynamic) {
         if (!value.isNull) {
-            val collection = FeatureCollection.fromJson(value.asString())
+            val stringValue = value.asString()
+            if (stringValue == null) {
+                Logger.e("RNMBXCameraManager", "maxBounds string is null")
+                return
+            }
+            val collection = FeatureCollection.fromJson(stringValue)
             camera.setMaxBounds(toLatLngBounds(collection))
         } else {
             camera.setMaxBounds(null)

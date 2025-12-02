@@ -11,7 +11,6 @@ package com.facebook.react.viewmanagers;
 
 import android.view.View;
 import com.facebook.react.bridge.Dynamic;
-
 public interface RNMBXRasterSourceManagerInterface<T extends View> {
   void setId(T view, Dynamic value);
   void setExisting(T view, Dynamic value);
@@ -22,4 +21,5 @@ public interface RNMBXRasterSourceManagerInterface<T extends View> {
   void setTileSize(T view, Dynamic value);
   void setTms(T view, Dynamic value);
   void setAttribution(T view, Dynamic value);
+  void setSourceBounds(T view, Dynamic value);
 }

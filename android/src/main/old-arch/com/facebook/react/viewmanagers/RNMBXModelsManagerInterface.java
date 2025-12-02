@@ -11,7 +11,6 @@ package com.facebook.react.viewmanagers;
 
 import android.view.View;
 import com.facebook.react.bridge.Dynamic;
-
 public interface RNMBXModelsManagerInterface<T extends View> {
   void setModels(T view, Dynamic value);
 }

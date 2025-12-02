@@ -1,5 +1,4 @@
-import { FAB, Icon, ListItem, Overlay } from '@rneui/base';
-import MapboxGL, {
+import {
   Camera,
   CircleLayer,
   CircleLayerStyle,
@@ -7,15 +6,19 @@ import MapboxGL, {
   ShapeSource,
   SymbolLayer,
   SymbolLayerStyle,
+  StyleURL,
 } from '@rnmapbox/maps';
 import { FeatureCollection } from 'geojson';
-import moment from 'moment';
 import React, { useRef, useState } from 'react';
-import { FlatList, SafeAreaView } from 'react-native';
+import { FAB, Icon, ListItem } from '@rneui/base';
+import moment from 'moment';
+import { FlatList, Modal } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import earthQuakesJSON from '../../assets/earthquakes.json';
 import { SF_OFFICE_COORDINATE } from '../../utils';
 import { ExampleWithMetadata } from '../common/ExampleMetadata';
+import { BaseExampleProps } from '../common/BaseExamplePropTypes';
 
 const layerStyles: {
   singlePoint: CircleLayerStyle;
@@ -75,13 +78,6 @@ const layerStyles: {
 };
 
 const styles = {
-  fab: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    elevation: 9999,
-    zIndex: 9999,
-  },
   matchParent: {
     flex: 1,
   },
@@ -93,60 +89,72 @@ const mag3 = ['all', ['>=', ['get', 'mag'], 3], ['<', ['get', 'mag'], 4]];
 const mag4 = ['all', ['>=', ['get', 'mag'], 4], ['<', ['get', 'mag'], 5]];
 const mag5 = ['>=', ['get', 'mag'], 5];
 
-const Earthquakes = () => {
+const modalStyles = {
+  fab: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    elevation: 9999,
+    zIndex: 9999,
+  },
+} as const;
+
+export const EarthquakesDetailsModal: React.FC<{
+  selectedCluster?: FeatureCollection;
+  dismiss: () => void;
+}> = ({ selectedCluster, dismiss }) => (
+  <SafeAreaView style={{ flex: 1 }}>
+    <FAB
+      onPress={dismiss}
+      icon={<Icon name="close" />}
+      size="large"
+      style={modalStyles.fab}
+    />
+    {selectedCluster && (
+      <FlatList
+        style={{ flex: 1 }}
+        keyExtractor={({ properties: earthquakeInfo }) => {
+          return earthquakeInfo?.code;
+        }}
+        data={selectedCluster.features}
+        renderItem={({ item: { properties: earthquakeInfo } }) => {
+          const magnitude = `Magnitude: ${earthquakeInfo?.mag}`;
+          const place = `Place: ${earthquakeInfo?.place}`;
+          const code = `Code: ${earthquakeInfo?.code}`;
+          const time = `Time: ${moment(earthquakeInfo?.time).format(
+            'MMMM Do YYYY, h:mm:ss a',
+          )}`;
+
+          return (
+            <ListItem bottomDivider key={code}>
+              <ListItem.Content>
+                <ListItem.Title>{earthquakeInfo?.title}</ListItem.Title>
+                <ListItem.Subtitle>{magnitude}</ListItem.Subtitle>
+                <ListItem.Subtitle>{place}</ListItem.Subtitle>
+                <ListItem.Subtitle>{code}</ListItem.Subtitle>
+                <ListItem.Subtitle>{time}</ListItem.Subtitle>
+              </ListItem.Content>
+            </ListItem>
+          );
+        }}
+      />
+    )}
+  </SafeAreaView>
+);
+
+const Earthquakes: React.FC<Partial<BaseExampleProps>> = () => {
   const shapeSource = useRef<ShapeSource>(null);
   const [selectedCluster, setSelectedCluster] = useState<FeatureCollection>();
 
   return (
     <>
-      <Overlay isVisible={!!selectedCluster} fullScreen>
-        <SafeAreaView style={{ flex: 1 }}>
-          <FAB
-            onPress={() => {
-              setSelectedCluster(undefined);
-            }}
-            icon={<Icon name="close" />}
-            size="large"
-            style={styles.fab}
-          />
-          {selectedCluster && (
-            <FlatList
-              keyExtractor={({ properties: earthquakeInfo }) => {
-                return earthquakeInfo?.code;
-              }}
-              data={selectedCluster.features}
-              renderItem={({ item: { properties: earthquakeInfo } }) => {
-                const magnitude = `Magnitude: ${earthquakeInfo?.mag}`;
-                const place = `Place: ${earthquakeInfo?.place}`;
-                const code = `Code: ${earthquakeInfo?.code}`;
-                const time = `Time: ${moment(earthquakeInfo?.time).format(
-                  'MMMM Do YYYY, h:mm:ss a',
-                )}`;
-
-                return (
-                  <ListItem bottomDivider>
-                    <ListItem.Content>
-                      <ListItem.Title>{earthquakeInfo?.title}</ListItem.Title>
-                      <ListItem.Subtitle>{magnitude}</ListItem.Subtitle>
-                      <ListItem.Subtitle>{place}</ListItem.Subtitle>
-                      <ListItem.Subtitle>{code}</ListItem.Subtitle>
-                      <ListItem.Subtitle>{time}</ListItem.Subtitle>
-                    </ListItem.Content>
-                  </ListItem>
-                );
-              }}
-            />
-          )}
-        </SafeAreaView>
-      </Overlay>
-      <MapView style={styles.matchParent} styleURL={MapboxGL.StyleURL.Dark}>
+      <MapView style={styles.matchParent} styleURL={StyleURL.Dark}>
         <Camera
           defaultSettings={{
             centerCoordinate: SF_OFFICE_COORDINATE,
             zoomLevel: 6,
           }}
         />
-
         <ShapeSource
           id="earthquakes"
           onPress={async (pressedShape) => {
@@ -155,17 +163,17 @@ const Earthquakes = () => {
                 const [cluster] = pressedShape.features;
 
                 const collection = await shapeSource.current.getClusterLeaves(
-                  cluster,
+                  cluster!,
                   999,
                   0,
                 );
 
                 setSelectedCluster(collection);
               } catch {
-                if (!pressedShape.features[0].properties?.cluster) {
+                if (!pressedShape.features[0]!.properties?.cluster) {
                   setSelectedCluster({
                     type: 'FeatureCollection',
-                    features: [pressedShape.features[0]],
+                    features: [pressedShape.features[0]!],
                   });
                 }
               }
@@ -215,6 +223,17 @@ const Earthquakes = () => {
           />
         </ShapeSource>
       </MapView>
+      <Modal
+        visible={!!selectedCluster}
+        animationType="slide"
+        presentationStyle="formSheet"
+        onRequestClose={() => setSelectedCluster(undefined)}
+      >
+        <EarthquakesDetailsModal
+          selectedCluster={selectedCluster}
+          dismiss={() => setSelectedCluster(undefined)}
+        />
+      </Modal>
     </>
   );
 };
@@ -233,7 +252,7 @@ const metadata: ExampleWithMetadata['metadata'] = {
     'expressions',
   ],
   docs: `
-Renders earthqueke with clustering.
+Renders earthquake with clustering.
 
 Click a cluster to show list of contents in the cluster \`getClusterLeaves\`.
 `,

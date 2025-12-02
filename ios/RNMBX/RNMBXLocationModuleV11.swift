@@ -11,8 +11,8 @@ class RNMBXLocation: NSObject {
 
   var timestamp: Date? = nil
 
-  func toJSON() -> [String:Any?] {
-    var coords: [String:Any?] = [:]
+  func toJSON() -> [String:Any] {
+    var coords: [String:Any] = [:]
     
     if let location = location {
       coords = coords.merging([
@@ -251,11 +251,11 @@ class RNMBXLocationModule: RCTEventEmitter {
     throttler.cancel()
   }
   
-  @objc func getLastKnownLocation() -> RNMBXLocation? {
+  @objc func getLastKnownLocation() -> [String: Any]? {
     let last = RNMBXLocation()
     last.heading = _locationProvider.latestHeading
     last.location = _locationProvider.getLastObservedLocation()
-    return last
+    return last.toJSON()
   }
   
   @objc
@@ -276,7 +276,15 @@ class RNMBXLocationModule: RCTEventEmitter {
       throttler.waitBetweenEvents = nil
     }
   }
-  
+
+  @objc func setRequestsAlwaysUse(_ requestsAlwaysUse: Bool) {
+    // V11TODO
+  }
+
+  @objc func simulateHeading(_ changesPerSecond: NSNumber, increment: NSNumber) {
+    // V11TODO
+  }
+
   @objc
   override func startObserving() {
     super.startObserving()

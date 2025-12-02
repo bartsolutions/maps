@@ -27,22 +27,14 @@ RCT_EXPORT_MODULE();
 
 - (void)withShapeSource:(nonnull NSNumber*)viewRef block:(void (^)(RNMBXShapeSource *))block reject:(RCTPromiseRejectBlock)reject methodName:(NSString *)methodName
 {
-#ifdef RCT_NEW_ARCH_ENABLED
-    [self.viewRegistry_DEPRECATED addUIBlock:^(RCTViewRegistry *viewRegistry) {
-        RNMBXShapeSourceComponentView *componentView = [self.viewRegistry_DEPRECATED viewForReactTag:viewRef];
-        RNMBXShapeSource *view = componentView.contentView;
-        
-#else
-    [self.bridge.uiManager
-     addUIBlock:^(RCTUIManager *uiManager, NSDictionary<NSNumber *, UIView *> *viewRegistry) {
-        RNMBXShapeSource *view = [uiManager viewForReactTag:viewRef];
-#endif // RCT_NEW_ARCH_ENABLED
-        if (view != nil) {
-           block(view);
-        } else {
-            reject(methodName, [NSString stringWithFormat:@"Unknown reactTag: %@", viewRef], nil);
-        }
-    }];
+    [RNMBXViewResolver withViewRef:viewRef
+                          delegate:self
+                     expectedClass:[RNMBXShapeSource class]
+                             block:^(UIView *view) {
+                                 block((RNMBXShapeSource *)view);
+                             }
+                            reject:reject
+                        methodName:methodName];
 }
 
 
@@ -53,7 +45,7 @@ RCT_EXPORT_METHOD(getClusterChildren:(nonnull NSNumber *)viewRef featureJSON:(NS
     } reject:reject methodName:@"getClusterChildren"];
 }
   
-RCT_EXPORT_METHOD(getClusterLeaves:(nonnull NSNumber *)viewRef featureJSON:(NSString *)featureJSON  number:(double)number offset:(double)offset resolve:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject)
+RCT_EXPORT_METHOD(getClusterLeaves:(nonnull NSNumber *)viewRef featureJSON:(NSString *)featureJSON number:(NSInteger)number offset:(NSInteger)offset resolve:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject)
 {
  [self withShapeSource:viewRef block:^(RNMBXShapeSource *view) {
      [RNMBXShapeSourceViewManager getClusterLeavesWithShapeSource:view featureJSON:featureJSON number:number offset:offset resolver:resolve rejecter:reject];

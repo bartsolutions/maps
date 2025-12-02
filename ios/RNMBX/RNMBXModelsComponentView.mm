@@ -12,7 +12,7 @@
 
 #import "rnmapbox_maps-Swift.pre.h"
 
-#import "RCTFollyConvert.h"
+#import "RNMBXFollyConvert.h"
 #import "RNMBXFabricPropConvert.h"
 
 
@@ -21,6 +21,12 @@ using namespace facebook::react;
 
 @implementation RNMBXModelsComponentView {
     RNMBXModels *_view;
+}
+
+// Needed because of this: https://github.com/facebook/react-native/pull/37274
++ (void)load
+{
+  [super load];
 }
 
 - (instancetype)initWithFrame:(CGRect)frame

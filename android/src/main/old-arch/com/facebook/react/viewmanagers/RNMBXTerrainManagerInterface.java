@@ -11,7 +11,6 @@ package com.facebook.react.viewmanagers;
 
 import android.view.View;
 import com.facebook.react.bridge.Dynamic;
-
 public interface RNMBXTerrainManagerInterface<T extends View> {
   void setSourceID(T view, Dynamic value);
   void setReactStyle(T view, Dynamic value);

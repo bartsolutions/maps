@@ -13,9 +13,6 @@ import android.view.View.OnLayoutChangeListener
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.LifecycleRegistry
-import androidx.lifecycle.ViewTreeLifecycleOwner
 import com.facebook.react.bridge.*
 import com.mapbox.android.gestures.*
 import com.mapbox.bindgen.Value
@@ -70,11 +67,13 @@ import java.util.*
 import com.rnmapbox.rnmbx.components.annotation.RNMBXPointAnnotationCoordinator
 import com.rnmapbox.rnmbx.components.images.ImageManager
 import com.rnmapbox.rnmbx.modules.RNMBXModule
+import com.rnmapbox.rnmbx.utils.extensions.toStringKeyPairs
 
 import com.rnmapbox.rnmbx.v11compat.event.*
 import com.rnmapbox.rnmbx.v11compat.ornamentsettings.*
 import org.json.JSONException
 import org.json.JSONObject
+
 
 fun <T> MutableList<T>.removeIf21(predicate: (T) -> Boolean): Boolean {
     var removed = false
@@ -99,86 +98,11 @@ enum class MapGestureType {
     Move,Scale,Rotate,Fling,Shove
 }
 
-/***
- * Mapbox's MapView observers lifecycle events see MapboxLifecyclePluginImpl - (ON_START, ON_STOP, ON_DESTROY)
- * We need to emulate those.
- */
-interface RNMBXLifeCycleOwner : LifecycleOwner {
-    fun handleLifecycleEvent(event: Lifecycle.Event)
-}
-
 fun interface Cancelable {
     fun cancel()
 }
 
-class RNMBXLifeCycle {
-    private var lifecycleOwner : RNMBXLifeCycleOwner? = null
-
-    fun onAttachedToWindow(view: View) {
-        if (lifecycleOwner == null) {
-            lifecycleOwner = object : RNMBXLifeCycleOwner {
-                private lateinit var lifecycleRegistry: LifecycleRegistry
-                init {
-                    lifecycleRegistry = LifecycleRegistry(this)
-                    lifecycleRegistry.currentState = Lifecycle.State.CREATED
-                }
-
-                override fun handleLifecycleEvent(event: Lifecycle.Event) {
-                    try {
-                        lifecycleRegistry.handleLifecycleEvent(event)
-                    } catch (e: RuntimeException) {
-                        Log.e("RNMBXMapView", "handleLifecycleEvent, handleLifecycleEvent error: $e")
-                    }
-                }
-
-                override fun getLifecycle(): Lifecycle {
-                    return lifecycleRegistry
-                }
-            }
-            ViewTreeLifecycleOwner.set(view, lifecycleOwner);
-        }
-        lifecycleOwner?.handleLifecycleEvent(Lifecycle.Event.ON_START)
-    }
-
-    fun onDetachedFromWindow() {
-        if (lifecycleOwner?.lifecycle?.currentState == Lifecycle.State.DESTROYED) {
-            return
-        }
-        lifecycleOwner?.handleLifecycleEvent(androidx.lifecycle.Lifecycle.Event.ON_STOP)
-    }
-
-    fun onDestroy() {
-        if (lifecycleOwner?.lifecycle?.currentState == Lifecycle.State.STARTED || lifecycleOwner?.lifecycle?.currentState == Lifecycle.State.RESUMED) {
-            lifecycleOwner?.handleLifecycleEvent(androidx.lifecycle.Lifecycle.Event.ON_STOP)
-        }
-        if (lifecycleOwner?.lifecycle?.currentState != Lifecycle.State.DESTROYED) {
-            lifecycleOwner?.handleLifecycleEvent(androidx.lifecycle.Lifecycle.Event.ON_DESTROY)
-        }
-    }
-
-    fun getState() : Lifecycle.State {
-        return lifecycleOwner?.lifecycle?.currentState ?: Lifecycle.State.INITIALIZED;
-    }
-
-    var attachedToWindowWaiters : MutableList<()-> Unit> = mutableListOf()
-
-    fun callIfAttachedToWindow(callback: () -> Unit) : com.rnmapbox.rnmbx.components.mapview.Cancelable {
-        if (getState() == Lifecycle.State.STARTED) {
-            callback()
-            return com.rnmapbox.rnmbx.components.mapview.Cancelable {}
-        } else {
-            attachedToWindowWaiters.add(callback)
-            return com.rnmapbox.rnmbx.components.mapview.Cancelable {
-                attachedToWindowWaiters.removeIf21 { it === callback }
-            }
-        }
-    }
-
-    fun afterAttachFromLooper() {
-        attachedToWindowWaiters.forEach { it() }
-        attachedToWindowWaiters.clear()
-    }
-}
+// RNMBXLifeCycle is now provided by lifecycle-compat layer
 
 data class FeatureEntry(val feature: AbstractMapFeature?, val view: View?, var addedToMap: Boolean = false) {
 
@@ -235,6 +159,7 @@ open class RNMBXMapView(private val mContext: Context, var mManager: RNMBXMapVie
     private val mFeatures = mutableListOf<FeatureEntry>()
     private var mQueuedFeatures: MutableList<AbstractMapFeature>? = ArrayList()
     private val mCameraChangeTracker = CameraChangeTracker()
+    private var mPreferredFrameRate: Int? = null
     private lateinit var mMap: MapboxMap
 
     private lateinit var mMapView: MapView
@@ -651,6 +576,12 @@ open class RNMBXMapView(private val mContext: Context, var mManager: RNMBXMapVie
         changes.add(Property.LOCALIZE_LABELS)
     }
 
+    fun setReactPreferredFramesPerSecond(preferredFramesPerSecond: Int) {
+        if (this::mMapView.isInitialized) {
+            mMapView.setMaximumFps(preferredFramesPerSecond)
+        }
+    }
+
     fun setReactStyleURL(styleURL: String) {
         mStyleURL = styleURL
         changes.add(Property.STYLE_URL)
@@ -970,11 +901,13 @@ open class RNMBXMapView(private val mContext: Context, var mManager: RNMBXMapVie
 
     fun getPointInView(coordinate: Point, response: CommandResponse) {
         val point = mMap!!.pixelForCoordinate(coordinate)
+        val density = getDisplayDensity()
+        val pointInView = PointF((point.x / density).toFloat(), (point.y / density).toFloat())
 
         response.success {
             val array: WritableArray = WritableNativeArray()
-            array.pushDouble(point.x)
-            array.pushDouble(point.y)
+            array.pushDouble(pointInView.x.toDouble())
+            array.pushDouble(pointInView.y.toDouble())
             it.putArray("pointInView", array)
         }
     }
@@ -984,7 +917,13 @@ open class RNMBXMapView(private val mContext: Context, var mManager: RNMBXMapVie
             Logger.e("queryRenderedFeaturesAtPoint", "mapbox map is null")
             return
         }
-        val screenCoordinate = ScreenCoordinate(point.x.toDouble(), point.y.toDouble())
+        // JS sends point values in DIP (see getPointInView which divides by display density),
+        // but Mapbox core expects screen pixel coordinates. Convert back to px here.
+        val density: Float = getDisplayDensity()
+        val screenCoordinate = ScreenCoordinate(
+                (point.x * density).toDouble(),
+                (point.y * density).toDouble()
+        )
         val queryGeometry = RenderedQueryGeometry(screenCoordinate)
         val layers = layerIDs?.takeUnless { it.isEmpty() } ?: null;
         val queryOptions = RenderedQueryOptions(layers, filter)
@@ -1004,7 +943,7 @@ open class RNMBXMapView(private val mContext: Context, var mManager: RNMBXMapVie
     }
 
     fun queryRenderedFeaturesInRect(rect: RectF?, filter: Expression?, layerIDs: List<String>?, response: CommandResponse) {
-        val size = mMap!!.getMapOptions().size
+        val size = mMap.getMapOptions().size
         val screenBox = if (rect == null) ScreenBox(ScreenCoordinate(0.0, 0.0), ScreenCoordinate(size?.width!!.toDouble(), size?.height!!.toDouble())) else ScreenBox(
                 ScreenCoordinate(rect.right.toDouble(), rect.bottom.toDouble() ),
                 ScreenCoordinate(rect.left.toDouble(), rect.top.toDouble()),
@@ -1029,7 +968,7 @@ open class RNMBXMapView(private val mContext: Context, var mManager: RNMBXMapVie
     }
 
     fun querySourceFeatures(sourceId: String, filter: Expression?, sourceLayerIDs: List<String>?, response: CommandResponse) {
-        mMap?.querySourceFeatures(
+        mMap.querySourceFeatures(
                 sourceId,
                 SourceQueryOptions(sourceLayerIDs, (filter ?: Value.nullValue()) as Value),
         ) { features ->
@@ -1049,7 +988,7 @@ open class RNMBXMapView(private val mContext: Context, var mManager: RNMBXMapVie
     }
 
     fun getVisibleBounds(response: CommandResponse) {
-        val bounds = mMap!!.coordinateBoundsForCamera(mMap!!.cameraState.toCameraOptions())
+        val bounds = mMap.coordinateBoundsForCamera(mMap.cameraState.toCameraOptions())
 
         response.success {
             it.putArray("visibleBounds", bounds.toReadableArray())
@@ -1076,7 +1015,7 @@ open class RNMBXMapView(private val mContext: Context, var mManager: RNMBXMapVie
     }
 
     fun queryTerrainElevation(longitude: Double, latitude: Double, response: CommandResponse) {
-        val result = mMap?.getElevation(Point.fromLngLat(longitude, latitude))
+        val result = mMap.getElevation(Point.fromLngLat(longitude, latitude))
 
         if (result != null) {
             response.success {
@@ -1093,6 +1032,70 @@ open class RNMBXMapView(private val mContext: Context, var mManager: RNMBXMapVie
                 response.error(expected.error!!.toString())
             } else {
                 response.success { it.putBoolean("data", true) }
+            }
+        }
+    }
+
+    fun setFeatureState(
+      featureId: String,
+      state: HashMap<String, Value>,
+      sourceId: String,
+      sourceLayerId: String?,
+      response: CommandResponse
+    ) {
+        mapView.getMapboxMap().setFeatureStateCompat(
+            sourceId,
+            sourceLayerId,
+            featureId,
+            Value.valueOf(state)
+        ) { expected ->
+            if (expected.isError()) {
+                response.error(expected.error!!.toString())
+            } else {
+                response.success { }
+            }
+        }
+    }
+
+    fun getFeatureState(
+      featureId: String,
+      sourceId: String,
+      sourceLayerId: String?,
+      response: CommandResponse
+    ) {
+        mapView.getMapboxMap().getFeatureState(sourceId, sourceLayerId, featureId) { expected ->
+            if (expected.isValue) {
+                response.success {
+                    val state = expected.value?.contents;
+                    if (state is Map<*,*>) {
+                        it.putMap("featureState", writableMapOf(*state.toStringKeyPairs()))
+                    } else {
+                        it.putMap("featureState", Arguments.createMap())
+                    }
+                }
+            } else {
+                response.error(expected.error ?: "Unknown error")
+            }
+        }
+    }
+
+    fun removeFeatureState(
+      featureId: String,
+      stateKey: String?,
+      sourceId: String,
+      sourceLayerId: String?,
+      response: CommandResponse
+    ) {
+        mapView.getMapboxMap().removeFeatureStateCompat(
+            sourceId,
+            sourceLayerId,
+            featureId,
+            stateKey
+        ) { expected ->
+            if (expected.isError()) {
+                response.error(expected.error?.toString() ?: "Unknown error")
+            } else {
+                response.success { }
             }
         }
     }
@@ -1133,8 +1136,15 @@ open class RNMBXMapView(private val mContext: Context, var mManager: RNMBXMapVie
             Logger.e("MapView", "setSourceVisibility, map is null")
             return
         }
-        val style = mMap!!.getStyle();
-        style!!.styleLayers.forEach {
+        val style = mMap.getStyle();
+
+        val styleLayers = style?.styleLayers
+        if (styleLayers == null) {
+            Logger.e("MapView", "setSourceVisibility, map.getStyle().styleLayers is null")
+            return
+        }
+
+        styleLayers.forEach {
             val layer = style.getLayer(it.id)
             if ((layer != null) && match(layer, sourceId, sourceLayerId)) {
                 layer.visibility(

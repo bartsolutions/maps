@@ -11,7 +11,6 @@ package com.facebook.react.viewmanagers;
 
 import android.view.View;
 import com.facebook.react.bridge.Dynamic;
-
 public interface RNMBXAtmosphereManagerInterface<T extends View> {
   void setReactStyle(T view, Dynamic value);
 }

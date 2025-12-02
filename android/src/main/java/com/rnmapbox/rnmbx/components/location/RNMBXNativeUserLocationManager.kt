@@ -11,6 +11,7 @@ import com.google.gson.Gson
 import com.google.gson.stream.JsonWriter
 import com.mapbox.bindgen.Value
 import com.mapbox.maps.extension.style.expressions.generated.Expression
+import com.rnmapbox.rnmbx.rncompat.dynamic.*
 import com.rnmapbox.rnmbx.utils.Logger
 import com.rnmapbox.rnmbx.utils.extensions.toJsonArray
 import java.io.StringWriter
@@ -107,8 +108,14 @@ fun _convertToDoubleValueOrExpression(value: Dynamic?, name: String): Value? {
         return null
     }
     return when (value.type) {
-        ReadableType.Array ->
-            Expression.fromRaw(Gson().toJson(value.asArray().toJsonArray()))
+        ReadableType.Array -> {
+            val array = value.asArray()
+            if (array == null) {
+                Logger.e("RNMBXNativeUserLocationManager", "_convertToDoubleValueOrExpression: array is null for $name")
+                return null
+            }
+            Expression.fromRaw(Gson().toJson(array.toJsonArray()))
+        }
         ReadableType.Number ->
             Value.valueOf(value.asDouble())
         else -> {

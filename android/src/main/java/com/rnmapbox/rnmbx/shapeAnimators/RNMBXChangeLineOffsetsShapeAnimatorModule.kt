@@ -11,6 +11,8 @@ import com.mapbox.turf.TurfConstants.UNIT_METERS
 import com.mapbox.turf.TurfMeasurement
 import com.mapbox.turf.TurfMisc
 import com.rnmapbox.rnmbx.NativeRNMBXChangeLineOffsetsShapeAnimatorModuleSpec
+import com.rnmapbox.rnmbx.utils.ViewRefTag
+import com.rnmapbox.rnmbx.utils.Logger
 
 class ChangeLineOffsetsShapeAnimator(tag: Tag, _lineString: LineString, startOffset: Double, endOffset: Double): ShapeAnimatorCommon(tag) {
     private var lineString = _lineString
@@ -152,8 +154,8 @@ class RNMBXChangeLineOffsetsShapeAnimatorModule(
         const val NAME = "RNMBXChangeLineOffsetsShapeAnimatorModule"
     }
 
-    override fun create(
-        tag: Double,
+    override fun generate(
+        tag: ViewRefTag,
         coordinates: ReadableArray,
         startOffset: Double,
         endOffset: Double,
@@ -172,11 +174,11 @@ class RNMBXChangeLineOffsetsShapeAnimatorModule(
         promise?.resolve(tag.toInt())
     }
 
-    private fun getAnimator(tag: Double): ChangeLineOffsetsShapeAnimator {
+    private fun getAnimator(tag: ViewRefTag): ChangeLineOffsetsShapeAnimator {
         return shapeAnimatorManager.get(tag.toLong()) as ChangeLineOffsetsShapeAnimator
     }
 
-    override fun setLineString(tag: Double, coordinates: ReadableArray?, startOffset: Double, endOffset: Double, promise: Promise?) {
+    override fun setLineString(tag: ViewRefTag, coordinates: ReadableArray?, startOffset: Double, endOffset: Double, promise: Promise?) {
         val animator = getAnimator(tag)
 
         if (coordinates == null) {
@@ -191,13 +193,13 @@ class RNMBXChangeLineOffsetsShapeAnimatorModule(
         promise?.resolve(true)
     }
 
-    override fun setStartOffset(tag: Double, offset: Double, duration: Double, promise: Promise?) {
+    override fun setStartOffset(tag: ViewRefTag, offset: Double, duration: Double, promise: Promise?) {
         val animator = getAnimator(tag)
         animator.setStartOffset(offset, duration / 1000)
         promise?.resolve(true)
     }
 
-    override fun setEndOffset(tag: Double, offset: Double, duration: Double, promise: Promise?) {
+    override fun setEndOffset(tag: ViewRefTag, offset: Double, duration: Double, promise: Promise?) {
         val animator = getAnimator(tag)
         animator.setEndOffset(offset, duration / 1000)
         promise?.resolve(true)
@@ -209,8 +211,13 @@ private fun buildLineString(_coordinates: ReadableArray): LineString {
 
     for (i in 0 until _coordinates.size()) {
         val arr = _coordinates.getArray(i)
-        val coord = Point.fromLngLat(arr.getDouble(0), arr.getDouble(1))
-        coordinates = coordinates.plus(coord)
+
+        val coord = arr?.let { Point.fromLngLat(arr.getDouble(0), it.getDouble(1)) }
+        if(coord != null) {
+            coordinates = coordinates.plus(coord)
+        } else {
+            Logger.e("RNMBXChangeLineOffsetsShapeAnimatorModule", "buildLineString: null coordinate for item: $i")
+        }
     }
 
     return LineString.fromLngLats(coordinates)

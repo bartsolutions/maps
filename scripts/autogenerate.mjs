@@ -12,6 +12,7 @@ import {
   generateCodegenJavaOldArch,
   javaOldArchDir,
 } from './codegen-old-arch.js';
+import { updatePackageJsonWithIOSComponents } from './autogenHelpers/generateIOSComponents.mjs';
 
 // process style spec json into json
 
@@ -19,7 +20,7 @@ const __dirname = url.fileURLToPath(new URL('.', import.meta.url));
 
 async function generate() {
   let layers = getLayers();
-  let outputPaths = generateCodeWithEjs(layers);
+  let outputPaths = await generateCodeWithEjs(layers);
 
   // autogenerate expo plugin
   execSync('yarn build:plugin', { stdio: 'inherit' });
@@ -64,16 +65,8 @@ async function generate() {
 
   outputPaths.push(
     ...codepartReplace(
-      path.join(
-        __dirname,
-        '..',
-        'ios/RNMBX',
-      ),
-      path.join(
-        __dirname,
-        '..',
-        'ios/RNMBX/codeparts/',
-      ),
+      path.join(__dirname, '..', 'ios/RNMBX'),
+      path.join(__dirname, '..', 'ios/RNMBX/codeparts/'),
       ['.swift'],
     ),
   );
@@ -87,6 +80,12 @@ async function generate() {
   await docBuilder.generate(docsJsonPath);
   await markdownBuilder.generate(docsJsonPath, docsRoot);
 
+  // autogenerate iOS components configuration
+  const updatedComponents = updatePackageJsonWithIOSComponents();
+  if (updatedComponents.length > 0) {
+    outputPaths.push('package.json');
+  }
+
   // rn new arch codegen
   await generateCodegenJavaOldArch();
   outputPaths.push(javaOldArchDir());
@@ -94,7 +93,8 @@ async function generate() {
   // Check if any generated files changed
   try {
     execSync(`git diff --exit-code docs/ ${outputPaths.join(' ')}`);
-  } catch (error) {
+    // eslint-disable-next-line no-unused-vars
+  } catch (_error) {
     console.error(
       '\n\nThere are unstaged changes in the generated code. ' +
         'Please add them to your commit.\n' +

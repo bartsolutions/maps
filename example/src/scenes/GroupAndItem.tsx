@@ -9,16 +9,13 @@ import {
   View,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { BaseExampleProps } from 'src/examples/common/BaseExamplePropTypes';
+import type { BaseExampleProps } from '../examples/common/BaseExamplePropTypes';
 
 import MapHeader from '../examples/common/MapHeader';
 import Page, { PageProps } from '../examples/common/Page';
 import sheet from '../styles/sheet';
 // ANIMATIONS
-import AnimatedPoint from '../examples/Animations/AnimatedPoint';
-import AnimatedLineOffsets from '../examples/Animations/AnimatedLineOffsets';
-import AnimatedLine from '../examples/Animations/AnimatedLine';
-import DriveTheLine from '../examples/Animations/DriveTheLine';
+import * as Animations from '../examples/Animations';
 // ANNOTATIONS
 import * as Annotations from '../examples/Annotations';
 // CAMERA
@@ -33,10 +30,14 @@ import * as Map from '../examples/Map';
 import * as SymbolCircleLayer from '../examples/SymbolCircleLayer';
 // USERLOCATION
 import * as UserLocation from '../examples/UserLocation';
+// WEB
+import * as Web from '../examples/Web';
 // MISC
 import BugReportExample from '../examples/BugReportExample';
 import BugReportExampleTS from '../examples/BugReportExampleTS';
-import CacheManagement from '../examples/CacheManagement';
+import CompilerTestExample from '../examples/CompilerTestExample';
+// Cache Management
+import * as CacheOffline from '../examples/CacheOffline';
 // V10
 import * as V10 from '../examples/V10';
 /*
@@ -49,6 +50,7 @@ import TerrainSkyAtmosphere from '../examples/V10/TerrainSkyAtmosphere';
 */
 // V11
 import StyleImportConfig from '../examples/V11/StyleImportConfig';
+import RasterParticle from '../examples/V11/RasterParticle';
 
 const MostRecentExampleKey = '@recent_example';
 
@@ -178,13 +180,13 @@ class ExampleItem implements ExampleNode {
     return this.path;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
   updateIfNeeded(_updated: () => void): void {}
 }
 
 type RootStackParamList = {
   Group: { path: string[] };
   Item: { path: string[] };
+  Earthquakes: { path: string[] };
 };
 
 type GroupProps = NativeStackScreenProps<RootStackParamList, 'Group'>;
@@ -229,20 +231,18 @@ class ExampleGroup implements ExampleNode {
     return this.path;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
   updateIfNeeded(_updated: () => void): void {}
 }
 
-const PageWrapper = (Component: ItemComponent) => (props: BaseExampleProps) =>
-  (
-    <Page
-      label={props.label}
-      onDismissExample={props.onDismissExample}
-      navigation={props.navigation}
-    >
-      <Component {...props} />
-    </Page>
-  );
+const PageWrapper = (Component: ItemComponent) => (props: BaseExampleProps) => (
+  <Page
+    label={props.label}
+    onDismissExample={props.onDismissExample}
+    navigation={props.navigation}
+  >
+    <Component {...props} />
+  </Page>
+);
 
 function example(
   Component: ItemComponent & {
@@ -278,19 +278,22 @@ function exampleGroup(
 
 const BugReportPage =
   (Klass: React.ComponentType<PageProps>) =>
-  ({ ...props }: PageProps) =>
-    (
-      <Page {...props}>
-        <Klass {...props} />
-      </Page>
-    );
+  ({ ...props }: PageProps) => (
+    <Page {...props}>
+      <Klass {...props} />
+    </Page>
+  );
 
 const Examples = new ExampleGroup('React Native Mapbox', [
   new MostRecentExampleItem(),
   new ExampleItem('Bug Report Template', BugReportPage(BugReportExample)),
   new ExampleItem('Bug Report Template TS', BugReportPage(BugReportExampleTS)),
+  new ExampleItem('React Compiler Test', BugReportPage(CompilerTestExample)),
   exampleGroup(V10),
-  new ExampleGroup('V11', [example(StyleImportConfig)]),
+  new ExampleGroup('V11', [
+    example(StyleImportConfig),
+    example(RasterParticle),
+  ]),
   exampleGroup(Map),
   exampleGroup(Camera),
   exampleGroup(UserLocation),
@@ -298,16 +301,9 @@ const Examples = new ExampleGroup('React Native Mapbox', [
   exampleGroup(FillRasterLayer),
   exampleGroup(LineLayer),
   exampleGroup(Annotations),
-  new ExampleGroup('Animations', [
-    new ExampleItem('Animated Point (Native Animator)', AnimatedPoint),
-    new ExampleItem(
-      'Animated Line Offsets (Native Animator)',
-      AnimatedLineOffsets,
-    ),
-    new ExampleItem('Animated Line', AnimatedLine),
-    new ExampleItem('Animated Point Along a Line', DriveTheLine),
-  ]),
-  new ExampleItem('Cache management', CacheManagement),
+  exampleGroup(Animations),
+  exampleGroup(Web),
+  exampleGroup(CacheOffline),
 ]);
 
 function ExampleGroupComponent({

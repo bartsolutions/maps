@@ -1,9 +1,7 @@
 import React from 'react';
 import { Text } from 'react-native';
-import MapboxGL from '@rnmapbox/maps';
+import { MapView, Camera } from '@rnmapbox/maps';
 
-import BaseExamplePropTypes from '../common/BaseExamplePropTypes';
-import Page from '../common/Page';
 import Bubble from '../common/Bubble';
 
 const styles = {
@@ -11,10 +9,6 @@ const styles = {
 };
 
 class GetZoom extends React.Component {
-  static propTypes = {
-    ...BaseExamplePropTypes,
-  };
-
   constructor(props) {
     super(props);
 
@@ -32,25 +26,38 @@ class GetZoom extends React.Component {
 
   render() {
     return (
-      <Page {...this.props}>
-        <MapboxGL.MapView
+      <>
+        <MapView
           onRegionDidChange={this.onRegionDidChange}
-          ref={(c) => (this._map = c)}
+          ref={(c) => {
+            this._map = c;
+          }}
           onPress={this.onPress}
           style={styles.mapView}
         >
-          <MapboxGL.Camera
-            zoomLevel={9}
-            centerCoordinate={[-73.970895, 40.723279]}
-          />
-        </MapboxGL.MapView>
+          <Camera zoomLevel={9} centerCoordinate={[-73.970895, 40.723279]} />
+        </MapView>
 
         <Bubble>
           <Text>Current zoom: {this.state.zoom}</Text>
         </Bubble>
-      </Page>
+      </>
     );
   }
 }
 
 export default GetZoom;
+/* end-example-doc */
+
+/**
+ * @typedef {import('../common/ExampleMetadata').ExampleWithMetadata} ExampleWithMetadata
+ * @type {ExampleWithMetadata['metadata']}
+ */
+const metadata = {
+  title: 'GetZoom',
+  tags: ['Camera', 'Camera#getZoom'],
+  docs: `
+Get zoom level of map via Camera#getZoom
+`,
+};
+GetZoom.metadata = metadata;

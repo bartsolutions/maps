@@ -11,7 +11,6 @@ package com.facebook.react.viewmanagers;
 
 import android.view.View;
 import com.facebook.react.bridge.Dynamic;
-
 public interface RNMBXSkyLayerManagerInterface<T extends View> {
   void setId(T view, Dynamic value);
   void setSourceID(T view, Dynamic value);

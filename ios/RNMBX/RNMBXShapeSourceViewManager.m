@@ -1,3 +1,4 @@
+#if !RCT_NEW_ARCH_ENABLED
 #import <React/RCTBridgeModule.h>
 #import <React/RCTViewManager.h>
 
@@ -16,7 +17,7 @@ RCT_EXPORT_VIEW_PROPERTY(clusterProperties, NSDictionary)
 RCT_EXPORT_VIEW_PROPERTY(maxZoomLevel, NSNumber)
 RCT_EXPORT_VIEW_PROPERTY(buffer, NSNumber)
 RCT_EXPORT_VIEW_PROPERTY(tolerance, NSNumber)
-RCT_EXPORT_VIEW_PROPERTY(lineMetrics, NSNumber)
+RCT_EXPORT_VIEW_PROPERTY(lineMetrics, BOOL)
 RCT_EXPORT_VIEW_PROPERTY(images, NSDictionary)
 RCT_EXPORT_VIEW_PROPERTY(nativeImages, NSArray)
 RCT_EXPORT_VIEW_PROPERTY(hasPressListener, BOOL)
@@ -24,3 +25,4 @@ RCT_EXPORT_VIEW_PROPERTY(hitbox, NSDictionary)
 RCT_REMAP_VIEW_PROPERTY(onMapboxShapeSourcePress, onPress, RCTBubblingEventBlock)
 
 @end
+#endif

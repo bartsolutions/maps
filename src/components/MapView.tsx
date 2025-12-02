@@ -9,7 +9,7 @@ import {
   HostComponent,
   LayoutChangeEvent,
 } from 'react-native';
-import { debounce } from 'debounce';
+import debounce from 'debounce';
 
 import NativeMapView, {
   type NativeMapViewActual,
@@ -23,7 +23,7 @@ import {
 } from '../utils';
 import { getFilter } from '../utils/filterUtils';
 import Logger from '../utils/Logger';
-import { FilterExpression } from '../utils/MapboxStyles';
+import type { FilterExpression } from '../utils/MapboxStyles';
 import { type Position } from '../types/Position';
 import { type Location } from '../modules/location/locationManager';
 
@@ -451,24 +451,27 @@ type Props = ViewProps & {
   _nativeImpl?: NativeMapViewActual;
 };
 
-type CallbablePropKeys =
-  | 'onRegionWillChange'
-  | 'onRegionIsChanging'
-  | 'onRegionDidChange'
-  | 'onUserLocationUpdate'
-  | 'onWillStartLoadingMap'
-  | 'onMapLoadingError'
-  | 'onDidFinishLoadingMap'
-  | 'onDidFailLoadingMap'
-  | 'onWillStartRenderingFrame'
-  | 'onDidFinishRenderingFrame'
-  | 'onDidFinishRenderingFrameFully'
-  | 'onWillStartRenderingMap'
-  | 'onDidFinishRenderingMap'
-  | 'onDidFinishRenderingMapFully'
-  | 'onDidFinishLoadingStyle'
-  | 'onMapIdle'
-  | 'onCameraChanged';
+const CallbablePropKeys = [
+  'onRegionWillChange',
+  'onRegionIsChanging',
+  'onRegionDidChange',
+  'onUserLocationUpdate',
+  'onWillStartLoadingMap',
+  'onMapLoadingError',
+  'onDidFinishLoadingMap',
+  'onDidFailLoadingMap',
+  'onWillStartRenderingFrame',
+  'onDidFinishRenderingFrame',
+  'onDidFinishRenderingFrameFully',
+  'onWillStartRenderingMap',
+  'onDidFinishRenderingMap',
+  'onDidFinishRenderingMapFully',
+  'onDidFinishLoadingStyle',
+  'onMapIdle',
+  'onCameraChanged',
+] as const;
+
+type CallbablePropKeys = (typeof CallbablePropKeys)[number];
 
 type CallbablePropKeysWithoutOn = CallbablePropKeys extends `on${infer C}`
   ? C
@@ -558,7 +561,7 @@ class MapView extends NativeBridgeComponent(
     this._onDebouncedRegionWillChange = debounce(
       this._onRegionWillChange.bind(this),
       props.regionWillChangeDebounceTime,
-      true,
+      { immediate: true },
     );
 
     this._onDebouncedRegionDidChange = debounce(
@@ -577,8 +580,16 @@ class MapView extends NativeBridgeComponent(
     this.logger.stop();
   }
 
-  UNSAFE_componentWillReceiveProps(nextProps: Props) {
-    this._setHandledMapChangedEvents(nextProps);
+  componentDidUpdate(prevProps: Props) {
+    const callbackProps = CallbablePropKeys;
+
+    const hasCallbackPropsChanged = callbackProps.some(
+      (propName) => prevProps[propName] !== this.props[propName],
+    );
+
+    if (hasCallbackPropsChanged) {
+      this._setHandledMapChangedEvents(this.props);
+    }
   }
 
   _setHandledMapChangedEvents(props: Props) {
@@ -751,7 +762,7 @@ class MapView extends NativeBridgeComponent(
    * @example
    * this._map.queryRenderedFeaturesInRect([30, 40, 20, 10], ['==', 'type', 'Point'], ['id1', 'id2'])
    *
-   * @param  {Array<Number>} bbox - A rectangle expressed in the map view’s coordinate system. For v10, this can be an empty array to query the visible map area.
+   * @param  {Array<Number>} bbox - A rectangle expressed in the map view’s coordinate system, density independent pixels and not map coordinates. This can be an empty array to query the visible map area.
    * @param  {Array=} filter - A set of strings that correspond to the names of layers defined in the current style. Only the features contained in these layers are included in the returned array.
    * @param  {Array=} layerIDs -  A array of layer id's to filter the features by
    * @return {FeatureCollection}
@@ -827,7 +838,7 @@ class MapView extends NativeBridgeComponent(
   ): Promise<ReturnType> {
     return super._runNativeMethod<typeof RNMBXMapView, ReturnType>(
       methodName,
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+
       // @ts-ignore TODO: fix types
       this._nativeRef as HostComponent<NativeProps> | undefined,
       args,
@@ -924,6 +935,96 @@ class MapView extends NativeBridgeComponent(
   ) {
     this._runNative<void>('setSourceVisibility', [
       visible,
+      sourceId,
+      sourceLayerId,
+    ]);
+  }
+
+  /**
+   * Updates the state map of a feature within a style source.
+   *
+   * Updates entries in the state map of a given feature within a style source.
+   * Only entries listed in the `state` will be updated.
+   * An entry in the feature state map that is not listed in `state` will retain its previous value.
+   *
+   * @param {string} featureId Identifier of the feature whose state should be updated.
+   * @param {[k: string]: NativeArg} state Map of entries to update with their respective new values.
+   * @param {string} sourceId Style source identifier.
+   * @param {string | null} sourceLayerId Style source layer identifier (for multi-layer sources such as vector sources).
+   */
+  async setFeatureState(
+    featureId: string,
+    state: { [k: string]: NativeArg },
+    sourceId: string,
+    sourceLayerId: string | null = null,
+  ): Promise<void> {
+    if (!RNMBXModule.MapboxV10) {
+      console.warn(
+        'RNMapbox: setFeatureState is only implemented in v10 implementation or later',
+      );
+      return;
+    }
+
+    await this._runNative<void>('setFeatureState', [
+      featureId,
+      state,
+      sourceId,
+      sourceLayerId,
+    ]);
+  }
+
+  /**
+   * Returns the state map of a feature within a style source.
+   *
+   * @param {string} featureId Identifier of the feature whose state should be queried.
+   * @param {string} sourceId Style source identifier.
+   * @param {string | null} sourceLayerId Style source layer identifier (for multi-layer sources such as vector sources).
+   */
+  async getFeatureState(
+    featureId: string,
+    sourceId: string,
+    sourceLayerId: string | null = null,
+  ): Promise<Readonly<Record<string, unknown>>> {
+    if (!RNMBXModule.MapboxV10) {
+      console.warn(
+        'RNMapbox: setFeatureState is only implemented in v10 implementation or later',
+      );
+      return {};
+    }
+
+    const res = await this._runNative<{
+      featureState: Readonly<Record<string, unknown>>;
+    }>('getFeatureState', [featureId, sourceId, sourceLayerId]);
+    return res.featureState;
+  }
+
+  /**
+   * Removes entries from a feature state object.
+   *
+   * Removes a specified property or all properties from a feature’s state object,
+   * depending on the value of `stateKey`.
+   *
+   * @param {string} featureId Identifier of the feature whose state should be removed.
+   * @param {string | null} stateKey The name of the property to remove. If `null`, all feature’s state object properties are removed.
+   * @param {string} sourceId Style source identifier.
+   * @param {string | null} sourceLayerId Style source layer identifier (for multi-layer sources such as vector sources).
+   */
+  async removeFeatureState(
+    featureId: string,
+    stateKey: string | null,
+    sourceId: string,
+    sourceLayerId: string | null = null,
+  ): Promise<void> {
+    if (!RNMBXModule.MapboxV10) {
+      console.warn(
+        'RNMapbox: removeFeatureState is only implemented in v10 implementation or later',
+      );
+      return;
+    }
+
+    await this._runNative<void>('removeFeatureState', [
+      featureId,
+      stateKey,
       sourceId,
       sourceLayerId,
     ]);
@@ -1076,7 +1177,7 @@ class MapView extends NativeBridgeComponent(
     });
   }
 
-  _handleOnChange<T>(propName: CallbablePropKeys, payload: object) {
+  _handleOnChange(propName: CallbablePropKeys, payload: object) {
     const func = this.props[propName] as (payload: object) => void;
     if (func && isFunction(func)) {
       func(payload);
@@ -1168,9 +1269,13 @@ class MapView extends NativeBridgeComponent(
     let mapView = null;
     if (this.state.isReady) {
       if (props._nativeImpl) {
+        // @ts-ignore - Complex native component prop type mismatch with React Native's new type system
+        // The custom _nativeImpl prop structure doesn't align with the strict NativeProps typing
         mapView = <props._nativeImpl {...props} {...callbacks} />;
       } else {
         mapView = (
+          // @ts-ignore - Native component prop type incompatibility with React Native's strict typing
+          // Props are correct at runtime but TypeScript can't verify the complex union type
           <RNMBXMapView {...props} {...callbacks}>
             {this.props.children}
           </RNMBXMapView>

@@ -7,7 +7,7 @@ import RNMBXRasterSourceNativeComponent from '../specs/RNMBXRasterSourceNativeCo
 
 import AbstractSource from './AbstractSource';
 
-const MapboxGL = NativeModules.RNMBXModule;
+const Mapbox = NativeModules.RNMBXModule;
 
 const isTileTemplateUrl = (url?: string): url is string =>
   !!url &&
@@ -20,7 +20,7 @@ type Props = BaseProps & {
   id: string;
 
   /**
-   * The id refers to en existing source in the style. Does not create a new source.
+   * The id refers to an existing source in the style. Does not create a new source.
    */
   existing?: boolean;
 
@@ -67,6 +67,12 @@ type Props = BaseProps & {
   attribution?: string;
 
   children?: React.ReactElement | React.ReactElement[];
+  /**
+   * An array containing the longitude and latitude of the southwest and northeast corners of
+   * the source's bounding box in the following order: `[sw.lng, sw.lat, ne.lng, ne.lat]`.
+   * When this property is included in a source, no tiles outside of the given bounds are requested by Mapbox GL.
+   */
+  sourceBounds?: number[];
 };
 
 type NativeProps = Props;
@@ -78,7 +84,7 @@ type NativeProps = Props;
  */
 class RasterSource extends AbstractSource<Props, NativeProps> {
   static defaultProps: Props = {
-    id: MapboxGL.StyleSource.DefaultSourceID,
+    id: Mapbox.StyleSource.DefaultSourceID,
   };
 
   constructor(props: Props) {

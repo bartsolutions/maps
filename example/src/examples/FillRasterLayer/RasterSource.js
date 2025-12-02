@@ -1,11 +1,5 @@
 import React from 'react';
-import {
-  Images,
-  MapView,
-  RasterLayer,
-  RasterSource,
-  Camera,
-} from '@rnmapbox/maps';
+import { MapView, RasterLayer, RasterSource, Camera } from '@rnmapbox/maps';
 
 const styles = {
   matchParent: { flex: 1 },
@@ -23,6 +17,10 @@ export default function RasterSourceExample() {
       <RasterSource
         id="stamen-watercolor"
         tileSize={256}
+        sourceBounds={[
+          -74.01010105570786, 40.7096750598196, -74.00028742807824,
+          40.71670107507063,
+        ]}
         tileUrlTemplates={['https://tile.openstreetmap.org/{z}/{x}/{y}.png']}
       />
       <RasterLayer
@@ -36,7 +34,10 @@ export default function RasterSourceExample() {
 
 /* end-example-doc */
 
-/** @type ExampleWithMetadata['metadata'] */
+/**
+ * @typedef {import('../common/ExampleMetadata').ExampleWithMetadata} ExampleWithMetadata
+ * @type {ExampleWithMetadata['metadata']}
+ */
 const metadata = {
   title: 'Raster Source',
   tags: [],

@@ -11,7 +11,6 @@ package com.facebook.react.viewmanagers;
 
 import android.view.View;
 import com.facebook.react.bridge.Dynamic;
-
 public interface RNMBXImagesManagerInterface<T extends View> {
   void setImages(T view, Dynamic value);
   void setNativeImages(T view, Dynamic value);

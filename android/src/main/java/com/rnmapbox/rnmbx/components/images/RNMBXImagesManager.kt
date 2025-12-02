@@ -6,7 +6,6 @@ import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.view.View
 import com.facebook.react.bridge.*
-import com.facebook.react.common.MapBuilder
 import com.facebook.react.uimanager.ThemedReactContext
 import com.facebook.react.uimanager.annotations.ReactProp
 import com.facebook.react.viewmanagers.RNMBXImagesManagerInterface
@@ -23,7 +22,7 @@ import com.rnmapbox.rnmbx.utils.extensions.getIfDouble
 import java.util.*
 
 class RNMBXImagesManager(private val mContext: ReactApplicationContext) :
-    AbstractEventEmitter<RNMBXImages?>(
+    AbstractEventEmitter<RNMBXImages>(
         mContext
     ), RNMBXImagesManagerInterface<RNMBXImages> {
     override fun getName(): String {
@@ -52,7 +51,7 @@ class RNMBXImagesManager(private val mContext: ReactApplicationContext) :
             stretchY = convertStretch(map.getDynamic("stretchY")) ?: listOf()
         }
         if (map.hasKey("content")) {
-            content = convertContent(map.getDynamic("content")) ?: null
+            content = convertContent(map.getDynamic("content"))
         }
         if (map.hasKey("scale")) {
             if (map.getType("scale") != ReadableType.Number) {
@@ -73,8 +72,13 @@ class RNMBXImagesManager(private val mContext: ReactApplicationContext) :
 
     @ReactProp(name = "images")
     override fun setImages(images: RNMBXImages, map: Dynamic) {
+        val mapValue = map.asMap()
+        if (mapValue == null) {
+            Logger.e("RNMBXImagesManager", "images map is null")
+            return
+        }
         val imagesList = mutableListOf<Map.Entry<String, ImageEntry>>()
-        map.asMap().forEach { imageName, imageInfo ->
+        mapValue.forEach { imageName, imageInfo ->
             when (imageInfo) {
                 is ReadableMap -> {
                     val uri = imageInfo.getString("uri")
@@ -161,7 +165,11 @@ class RNMBXImagesManager(private val mContext: ReactApplicationContext) :
     fun toNativeImage(dynamic: Dynamic): NativeImage? {
         when (dynamic.type) {
             ReadableType.String -> {
-                val resourceName = dynamic.asString();
+                val resourceName = dynamic.asString()
+                if (resourceName == null) {
+                    Logger.e("RNMBXImages", "nativeImages string element is null")
+                    return null
+                }
                 val drawable =
                     convertDrawableToBitmap(ResourceUtils.getDrawableByName(mContext, resourceName))
                 if (drawable != null) {
@@ -173,6 +181,10 @@ class RNMBXImagesManager(private val mContext: ReactApplicationContext) :
             }
             ReadableType.Map -> {
                 val map = dynamic.asMap()
+                if (map == null) {
+                    Logger.e("RNMBXImages", "nativeImages map element is null")
+                    return null
+                }
                 val resourceName = map.getString("name")
                 val drawable =
                     convertDrawableToBitmap(ResourceUtils.getDrawableByName(mContext, resourceName))
@@ -192,9 +204,14 @@ class RNMBXImagesManager(private val mContext: ReactApplicationContext) :
 
     @ReactProp(name = "nativeImages")
     override fun setNativeImages(images: RNMBXImages, arr: Dynamic) {
+        val arrayValue = arr.asArray()
+        if (arrayValue == null) {
+            Logger.e("RNMBXImagesManager", "nativeImages array is null")
+            return
+        }
         val nativeImages = mutableListOf<NativeImage>();
-        for (i in 0 until arr.asArray().size()) {
-            val nativeImage = toNativeImage(arr.asArray().getDynamic(i))
+        for (i in 0 until arrayValue.size()) {
+            val nativeImage = toNativeImage(arrayValue.getDynamic(i))
             if (nativeImage != null) {
                 nativeImages.add(nativeImage)
             }
@@ -202,20 +219,13 @@ class RNMBXImagesManager(private val mContext: ReactApplicationContext) :
         images.setNativeImages(nativeImages)
     }
 
-    override fun customEvents(): Map<String, String>? {
-        return eventMapOf(
+    override fun customEvents(): Map<String, String>? { return eventMapOf(
             EventKeys.IMAGES_MISSING to "onImageMissing"
         )
     }
 
     // region RNMBXImage children
-
-    override fun addView(parent: RNMBXImages?, childView: View?, childPosition: Int) {
-        if (parent == null || childView == null) {
-            Logger.e("RNMBXImages", "addView: parent or childView is null")
-            return
-        }
-
+    override fun addView(parent: RNMBXImages, childView: View, childPosition: Int) {
         if (childView !is RNMBXImage) {
             Logger.e("RNMBXImages", "child view should be RNMBXImage")
             return
@@ -225,7 +235,7 @@ class RNMBXImagesManager(private val mContext: ReactApplicationContext) :
         childView.nativeImageUpdater = parent
     }
 
-    override fun removeView(parent: RNMBXImages?, view: View?) {
+    override fun removeView(parent: RNMBXImages, view: View) {
         if (parent == null || view == null) {
             Logger.e("RNMBXImages", "removeView: parent or view is null")
             return
@@ -234,12 +244,7 @@ class RNMBXImagesManager(private val mContext: ReactApplicationContext) :
         parent.mImageViews.remove(view)
     }
 
-    override fun removeAllViews(parent: RNMBXImages?) {
-        if (parent == null) {
-            Logger.e("RNMBXImages", "removeAllViews parent is null")
-            return
-        }
-
+    override fun removeAllViews(parent: RNMBXImages) {
         parent.mImageViews.clear()
     }
 
@@ -254,16 +259,24 @@ class RNMBXImagesManager(private val mContext: ReactApplicationContext) :
                 return null
             }
             val array = stretch.asArray()
+            if (array == null) {
+                Logger.e("RNMBXImages", "stretch array is null")
+                return null
+            }
             var result = mutableListOf<ImageStretches>();
             for (i in 0 until array.size()) {
                 if (array.getType(i) != ReadableType.Array) {
                     Logger.e("RNMBXImages", "each element of strech should be an array but was: ${array.getDynamic(i)}")
                 } else {
                     val pair = array.getArray(i)
-                    if (pair.size() != 2 || pair.getType(0) != ReadableType.Number || pair.getType(1) != ReadableType.Number) {
-                        Logger.e("RNMBXImages", "each element of stretch should be pair of 2 integers but was ${pair}")
+                    if (pair != null) {
+                        if (pair.size() != 2 || pair.getType(0) != ReadableType.Number || pair.getType(1) != ReadableType.Number) {
+                            Logger.e("RNMBXImages", "each element of stretch should be pair of 2 integers but was ${pair}")
+                        } 
+                        result.add(ImageStretches(pair.getDouble(0).toFloat(), pair.getDouble(1).toFloat()))
+                    } else {
+                        Logger.e("RNMBXImages", "each element of stretch should be an array but was null")
                     }
-                    result.add(ImageStretches(pair.getDouble(0).toFloat(), pair.getDouble(1).toFloat()))
                 }
             }
             return result;
@@ -275,6 +288,10 @@ class RNMBXImagesManager(private val mContext: ReactApplicationContext) :
                 return null
             }
             val array = content.asArray()
+            if (array == null) {
+                Logger.e("RNMBXImages", "content array is null")
+                return null
+            }
             if (array.size() != 4) {
                 Logger.e("RNMBXImages", "content should be an array of 4 numbers, got $content")
                 return null
