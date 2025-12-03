@@ -12,7 +12,5 @@ try {
   const fileContents = `{ "accessToken": "${new String(accessToken).trim()}" }`;
   fs.writeFileSync(path.join('./', 'env.json'), fileContents);
 } catch (error) {
-  // 文件不存在或其他读取错误
-  console.error('Failed to read access token file:', error.message);
-  process.exit(1);
+  console.log('Failed to read access token file:', error.message);
 }
