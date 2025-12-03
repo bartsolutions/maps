@@ -23,6 +23,7 @@
     "android",
     "ios",
     "cpp",
+    "yarn.lock",
     "*.podspec",
     "react-native.config.js",
     "!ios/build",
@@ -150,6 +151,9 @@
       "optional": true
     }
   },
+  "workspaces": [
+    "example"
+  ],
   "resolutions": {
     "@typescript-eslint/eslint-plugin": "^7.18.0",
     "@typescript-eslint/parser": "^7.18.0"
