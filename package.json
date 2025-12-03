@@ -1,7 +1,6 @@
 {
   "name": "@rnmapbox/maps",
   "version": "10.2.8",
-  "private": true,
   "description": "Community-supported, open-source React Native library for building maps using Mapbox native maps SDK for iOS and Android",
   "main": "./lib/module/index.js",
   "types": "./lib/typescript/src/index.native.d.ts",
@@ -151,9 +150,6 @@
       "optional": true
     }
   },
-  "workspaces": [
-    "example"
-  ],
   "resolutions": {
     "@typescript-eslint/eslint-plugin": "^7.18.0",
     "@typescript-eslint/parser": "^7.18.0"
