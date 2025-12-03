@@ -1,6 +1,6 @@
 import React from 'react';
 import Mapbox, { MapView, UserLocation, Camera } from '@rnmapbox/maps';
-import { SafeAreaView } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { ButtonGroup } from '@rneui/base';
 
 const DISPLACEMENT = [0, 5, 10];
@@ -48,7 +48,10 @@ export default SetDisplacement;
 
 /* end-example-doc */
 
-/** @type ExampleWithMetadata['metadata'] */
+/**
+ * @typedef {import('../common/ExampleMetadata').ExampleWithMetadata} ExampleWithMetadata
+ * @type {ExampleWithMetadata['metadata']}
+ */
 const metadata = {
   title: 'Set Displacement',
   tags: ['UserLocation', 'UserLocation#minDisplacement'],

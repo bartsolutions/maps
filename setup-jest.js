@@ -1,4 +1,5 @@
 // copied from `react-16-node-hanging-test-fix` module. Without it we get jest hangs.
+/* global jest */
 delete global.MessageChannel;
 import { NativeModules } from 'react-native';
 
@@ -162,6 +163,9 @@ NativeModules.RNMBXMapViewModule = {
   setHandledMapChangedEvents: jest.fn(),
   clearData: jest.fn(),
   querySourceFeatures: jest.fn(),
+  setFeatureState: jest.fn(),
+  getFeatureState: jest.fn(),
+  removeFeatureState: jest.fn(),
 };
 
 NativeModules.RNMBXShapeSourceModule = {

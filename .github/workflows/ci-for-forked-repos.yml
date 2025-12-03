@@ -8,10 +8,9 @@ jobs:
     name: "CI requiring tokens"
     uses: ./.github/workflows/ci-requiring-tokens.yml
     with:
-      NVMRC: v20.14.0
+      NVMRC: v22.16.0
       env_name: CI with Mapbox Tokens
       ref: ${{ github.event.pull_request.head.sha }}
     secrets:
-      ENV_MAPBOX_ACCESS_TOKEN: ${{ secrets.ENV_MAPBOX_ACCESS_TOKEN }}
-      ENV_MAPBOX_DOWNLOAD_TOKEN: ${{ secrets.ENV_MAPBOX_DOWNLOAD_TOKEN }}
+      MAPBOX_ACCESS_TOKEN: ${{ secrets.MAPBOX_ACCESS_TOKEN }}
 

@@ -11,7 +11,6 @@ package com.facebook.react.viewmanagers;
 
 import android.view.View;
 import com.facebook.react.bridge.Dynamic;
-
 public interface RNMBXCameraManagerInterface<T extends View> {
   void setMaxBounds(T view, Dynamic value);
   void setAnimationDuration(T view, Dynamic value);

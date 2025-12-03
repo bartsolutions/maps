@@ -82,7 +82,12 @@ class RNMBXShapeSourceManager(private val mContext: ReactApplicationContext, val
 
     @ReactProp(name = "shape")
     override fun setShape(source: RNMBXShapeSource, geoJSONStr: Dynamic) {
-        source.setShape(geoJSONStr.asString())
+        val str = geoJSONStr.asString()
+        if (str == null) {
+            Logger.e(LOG_TAG, "shape string is null")
+            return
+        }
+        source.setShape(str)
     }
 
     @ReactProp(name = "cluster")
@@ -102,11 +107,16 @@ class RNMBXShapeSourceManager(private val mContext: ReactApplicationContext, val
 
     @ReactProp(name = "clusterProperties")
     override fun setClusterProperties(source: RNMBXShapeSource, map: Dynamic) {
+        val mapValue = map.asMap()
+        if (mapValue == null) {
+            Logger.e(LOG_TAG, "clusterProperties map is null")
+            return
+        }
         val properties = HashMap<String, Any>()
-        val iterator = map.asMap().keySetIterator()
+        val iterator = mapValue.keySetIterator()
         while (iterator.hasNextKey()) {
             val name = iterator.nextKey()
-            val expressions = map.asMap().getArray(name)
+            val expressions = mapValue.getArray(name)
             val builder: MutableList<Value> = ArrayList()
             for (iExp in 0 until expressions!!.size()) {
                 var argument: Expression
@@ -119,7 +129,18 @@ class RNMBXShapeSourceManager(private val mContext: ReactApplicationContext, val
                     )
                     ReadableType.Boolean -> Expression.literal(expressions.getBoolean(iExp))
                     ReadableType.Number -> Expression.literal(expressions.getDouble(iExp))
-                    else -> Expression.literal(expressions.getString(iExp))
+                    ReadableType.String -> {
+                        val value = expressions.getString(iExp)
+                        if (value != null) {
+                            Expression.literal(value)
+                        } else {
+                            Logger.e("setClusterProperties", "String is null for $iExp")
+                            return
+                        }
+                    } else -> {
+                        Logger.e("setClusterProperties", "Unknown type for $iExp")
+                        return
+                    }
                 }
                 builder.add(argument)
             }
@@ -155,7 +176,12 @@ class RNMBXShapeSourceManager(private val mContext: ReactApplicationContext, val
 
     @ReactProp(name = "hitbox")
     override fun setHitbox(source: RNMBXShapeSource, map: Dynamic) {
-        source.setHitbox(map.asMap())
+        val mapValue = map.asMap()
+        if (mapValue == null) {
+            Logger.e(LOG_TAG, "hitbox map is null")
+            return
+        }
+        source.setHitbox(mapValue)
     }
 
     override fun customEvents(): Map<String, String>? {

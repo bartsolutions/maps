@@ -55,15 +55,16 @@ public class RNMBXShapeSource : RNMBXSource {
     }
   }
   
-  public override func addToMap(_ map: RNMBXMapView, style: Style) {
-    super.addToMap(map, style: style)
+  
+  public override func addToMap(_ map: RNMBXMapView, mapView: MapView, style: Style) {
+    super.addToMap(map, mapView:mapView, style: style)
   }
   
-  public override func removeFromMap(_ map: RNMBXMapView, reason: RemovalReason) -> Bool {
+  public override func removeFromMap(_ map: RNMBXMapView, mapView: MapView, reason: RemovalReason) -> Bool {
     if (reason == .ViewRemoval) {
       shapeAnimator?.unsubscribe(consumer: self)
     }
-    return super.removeFromMap(map, reason: reason)
+    return super.removeFromMap(map, mapView:mapView, reason: reason)
   }
 
   @objc public var cluster : NSNumber?
@@ -86,7 +87,7 @@ public class RNMBXShapeSource : RNMBXSource {
   @objc public var maxZoomLevel : NSNumber?
   @objc public var buffer : NSNumber?
   @objc public var tolerance : NSNumber?
-  @objc public var lineMetrics : NSNumber?
+  @objc public var lineMetrics : Bool = false
 
   override func sourceType() -> Source.Type {
     return GeoJSONSource.self
@@ -147,9 +148,7 @@ public class RNMBXShapeSource : RNMBXSource {
       result.tolerance = tolerance.doubleValue
     }
 
-    if let lineMetrics = lineMetrics {
-      result.lineMetrics = lineMetrics.boolValue
-    }
+    result.lineMetrics = lineMetrics
 
     return result
   }

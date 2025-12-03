@@ -9,8 +9,8 @@ platform :ios, '15.1'
 prepare_react_native_project!
 
 $RNMapboxMapsImpl = 'mapbox'
-if ENV['RNMBX11']
-  $RNMapboxMapsVersion = '= 11.7.0'
+if ENV['RNMBX10']
+  $RNMapboxMapsVersion = '10.19.0'
 end
 
 if ENV['CI_MAP_IMPL']
@@ -18,9 +18,10 @@ if ENV['CI_MAP_IMPL']
   case ENV['CI_MAP_IMPL']
   when 'mapbox'
     $RNMapboxMapsImpl = 'mapbox'
+    $RNMapboxMapsVersion = '10.19.0'
   when 'mapbox11'
     $RNMapboxMapsImpl = 'mapbox'
-    $RNMapboxMapsVersion = '= 11.8.0'
+    # Using default v11 version from main library
   else
     fail "Invalid CI_MAP_IMPL value: #{ENV['CI_MAP_IMPL']}"
   end
@@ -57,7 +58,7 @@ if INHIBIT_WARNING_BY_DEFAULT
   end
 end
 
-target 'RNMapboxGLExample' do
+target 'RNMapboxExample' do
   #pod 'rnmapbox-maps', :path => '../../', :inhibit_warnings => false
 
   config = use_native_modules!
@@ -82,34 +83,20 @@ target 'RNMapboxGLExample' do
     end
   end
 
-  if !ENV['CI']
-    post_install do |installer|
-      # See https://github.com/rnmapbox/maps/pull/2878
-      installer.pods_project.targets.each do |target|
-        target.build_configurations.each do |config|
-          config.build_settings["ONLY_ACTIVE_ARCH"] = "NO"
-        end
+  post_install do |installer|
+    # See https://github.com/rnmapbox/maps/pull/2878
+    installer.pods_project.targets.each do |target|
+      target.build_configurations.each do |config|
+        config.build_settings["ONLY_ACTIVE_ARCH"] = "NO"
       end
-      react_native_post_install(
-        installer,
-        # Set `mac_catalyst_enabled` to `true` in order to apply patches
-        # necessary for Mac Catalyst builds
-        :mac_catalyst_enabled => false,
-        # :ccache_enabled => true
-      )
-      $RNMapboxMaps.post_install(installer)
     end
-  else
-    # CI configuration
-    post_install do |installer|
-      # https://github.com/facebook/react-native/blob/main/packages/react-native/scripts/react_native_pods.rb#L197-L202
-      react_native_post_install(
-        installer,
-        config[:reactNativePath],
-        :mac_catalyst_enabled => false
-      )
-      disable_optimizations_in_release(installer)
-      $RNMapboxMaps.post_install(installer)
-    end
+    react_native_post_install(
+      installer,
+      # Set `mac_catalyst_enabled` to `true` in order to apply patches
+      # necessary for Mac Catalyst builds
+      :mac_catalyst_enabled => false,
+      # :ccache_enabled => true
+    )
+    $RNMapboxMaps.post_install(installer)
   end
 end

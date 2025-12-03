@@ -1,5 +1,5 @@
-/* eslint-disable @typescript-eslint/ban-types */
 import type { TurboModule } from 'react-native/Libraries/TurboModule/RCTExport';
+// @ts-ignore - CI environment type resolution issue for CodegenTypes
 import { Int32 } from 'react-native/Libraries/Types/CodegenTypes';
 import { TurboModuleRegistry } from 'react-native';
 
@@ -48,6 +48,26 @@ export interface Spec extends TurboModule {
     sourceId: string,
     withFilter: ReadonlyArray<Object>,
     withSourceLayerIDs: ReadonlyArray<string>,
+  ) => Promise<Object>;
+  setFeatureState: (
+    viewRef: Int32 | null,
+    featureId: string,
+    state: Object,
+    sourceId: string,
+    sourceLayerId: string | null,
+  ) => Promise<Object>;
+  getFeatureState: (
+    viewRef: Int32 | null,
+    featureId: string,
+    sourceId: string,
+    sourceLayerId: string | null,
+  ) => Promise<Object>;
+  removeFeatureState: (
+    viewRef: Int32 | null,
+    featureId: string,
+    stateKey: string | null,
+    sourceId: string,
+    sourceLayerId: string | null,
   ) => Promise<Object>;
 }
 

@@ -11,7 +11,6 @@ package com.facebook.react.viewmanagers;
 
 import android.view.View;
 import com.facebook.react.bridge.Dynamic;
-
 public interface RNMBXMapViewManagerInterface<T extends View> {
   void setAttributionEnabled(T view, Dynamic value);
   void setAttributionPosition(T view, Dynamic value);
@@ -41,4 +40,5 @@ public interface RNMBXMapViewManagerInterface<T extends View> {
   void setAttributionViewPosition(T view, Dynamic value);
   void setCompassImage(T view, Dynamic value);
   void setMapViewImpl(T view, Dynamic value);
+  void setPreferredFramesPerSecond(T view, Dynamic value);
 }

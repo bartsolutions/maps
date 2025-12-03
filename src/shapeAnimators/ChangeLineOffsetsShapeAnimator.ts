@@ -1,3 +1,4 @@
+// @ts-expect-error - @turf packages have type resolution issues with package.json exports
 import { Position } from '@turf/helpers';
 
 import NativeRNMBXChangeLineOffsetsShapeAnimatorModule from '../specs/NativeRNMBXChangeLineOffsetsShapeAnimatorModule';
@@ -17,7 +18,7 @@ export default class ChangeLineOffsetsShapeAnimator
     endOffset: number;
   }) {
     const tag = ShapeAnimatorManager.nextTag();
-    NativeRNMBXChangeLineOffsetsShapeAnimatorModule.create(
+    NativeRNMBXChangeLineOffsetsShapeAnimatorModule.generate(
       tag,
       args.coordinates,
       args.startOffset,

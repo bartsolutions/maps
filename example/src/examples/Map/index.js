@@ -1,12 +1,12 @@
+export { default as CameraGestureObserver } from './CameraGestureObserver';
 export { default as ChangeLayerColor } from './ChangeLayerColor';
-export { default as CreateOfflineRegion } from './CreateOfflineRegion';
-export { default as OfflineExample } from './OfflineExample';
 export { default as Ornaments } from './Ornaments';
 export { default as PointInMapView } from './PointInMapView';
 export { default as ShowAndHideLayer } from './ShowAndHideLayer';
 export { default as ShowClick } from './ShowClick';
 export { default as ShowMap } from './ShowMap';
 export { default as MapUnMount } from './MapUnMount';
+export { default as MapFps } from './MapFps';
 export { default as ShowMapLocalStyle } from './ShowMapLocalStyle';
 export { default as ShowRegionDidChange } from './ShowRegionDidChange';
 export { default as SourceLayerVisibility } from './SourceLayerVisibility';

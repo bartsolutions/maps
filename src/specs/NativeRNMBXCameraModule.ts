@@ -1,4 +1,5 @@
 import type { TurboModule } from 'react-native/Libraries/TurboModule/RCTExport';
+// @ts-ignore - CI environment type resolution issue for CodegenTypes
 import { Int32 } from 'react-native/Libraries/Types/CodegenTypes';
 import { TurboModuleRegistry } from 'react-native';
 
@@ -15,7 +16,7 @@ interface NativeCameraStop {
   paddingTop?: number;
   paddingBottom?: number;
   duration?: number;
-  mode?: NativeAnimationMode;
+  mode?: number;
 }
 
 type Stop =
@@ -24,13 +25,26 @@ type Stop =
     }
   | NativeCameraStop;
 
-type NativeAnimationMode = 'flight' | 'ease' | 'linear' | 'none' | 'move';
-
-// eslint-disable-next-line @typescript-eslint/ban-types, @typescript-eslint/no-unused-vars
-type ObjectOr<T> = Object;
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+type ObjectOr<_T> = Object;
 
 export interface Spec extends TurboModule {
   updateCameraStop(viewRef: ViewRef, stop: ObjectOr<Stop>): Promise<void>;
+  moveBy: (
+    viewRef: ViewRef,
+    x: number,
+    y: number,
+    animationMode: number,
+    animationDuration: number,
+  ) => Promise<void>;
+  scaleBy: (
+    viewRef: ViewRef,
+    x: number,
+    y: number,
+    animationMode: number,
+    animationDuration: number,
+    scaleFactor: number,
+  ) => Promise<void>;
 }
 
 export default TurboModuleRegistry.getEnforcing<Spec>('RNMBXCameraModule');

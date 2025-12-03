@@ -52,9 +52,10 @@ class Camera
       'centerCoordinate' | 'zoomLevel' | 'minZoomLevel' | 'maxZoomLevel'
     >
   >
-  implements Omit<CameraRef, 'setCamera'>
+  implements Omit<CameraRef, 'setCamera' | 'moveBy' | 'scaleBy'>
 {
-  context!: ContextType<typeof MapContext>;
+  // @ts-ignore - context is provided by React.Component with contextType
+  context: ContextType<typeof MapContext>;
 
   static contextType = MapContext;
   static UserTrackingModes = [];

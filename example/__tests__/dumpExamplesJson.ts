@@ -4,6 +4,7 @@
 import path from 'path';
 import fs from 'fs';
 
+import * as CacheOffline from '../src/examples/CacheOffline';
 import * as SymbolCircleLayer from '../src/examples/SymbolCircleLayer';
 import * as UserLocation from '../src/examples/UserLocation';
 import * as Map from '../src/examples/Map';
@@ -30,6 +31,7 @@ jest.mock('../src/assets/sportcar.glb', () => null, {
 });
 
 const allTests = {
+  CacheOffline,
   SymbolCircleLayer,
   UserLocation,
   Map,
@@ -55,7 +57,7 @@ function getExampleFullPath(
       relPath: `${relPathBase}.${ext}`,
       fullPath: path.join(relExamplesPath, `${relPathBase}.${ext}`),
     }))
-    .filter(({ relPath, fullPath }) =>
+    .filter(({ relPath: _relPath, fullPath }) =>
       fs.existsSync(path.join(mapsRootPath, fullPath)),
     );
   if (existingExamplePaths.length === 0) {
@@ -66,7 +68,7 @@ function getExampleFullPath(
       )}.*`,
     );
   }
-  return existingExamplePaths[0];
+  return existingExamplePaths[0]!;
 }
 
 describe('dump-examples-json', () => {

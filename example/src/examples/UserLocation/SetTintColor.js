@@ -1,7 +1,7 @@
 import React from 'react';
 import { MapView, Camera, UserLocation } from '@rnmapbox/maps';
 import { ButtonGroup } from '@rneui/base';
-import { SafeAreaView } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const COLOR = ['red', 'yellow', 'green'];
 const OPTIONS = [{ label: 'red' }, { label: 'yellow' }, { label: 'green' }];
@@ -40,7 +40,10 @@ export default SetTintColor;
 
 /* end-example-doc */
 
-/** @type ExampleWithMetadata['metadata'] */
+/**
+ * @typedef {import('../common/ExampleMetadata').ExampleWithMetadata} ExampleWithMetadata
+ * @type {ExampleWithMetadata['metadata']}
+ */
 const metadata = {
   title: 'Set Tint Color',
   tags: ['MapView#tintColor'],

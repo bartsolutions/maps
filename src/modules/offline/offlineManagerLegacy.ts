@@ -52,9 +52,8 @@ class OfflineManagerLegacy {
       );
     }
 
-    const nativeOfflinePack = await MapboxOfflineManager.createPack(
-      packOptions,
-    );
+    const nativeOfflinePack =
+      await MapboxOfflineManager.createPack(packOptions);
     this._offlinePacks[packOptions.name] = new OfflinePack(nativeOfflinePack);
   }
 
@@ -143,7 +142,7 @@ class OfflineManagerLegacy {
     await this._initialize();
     return Object.keys(this._offlinePacks).map(
       (name) => this._offlinePacks[name],
-    );
+    ) as OfflinePack[];
   }
 
   /**
@@ -158,6 +157,20 @@ class OfflineManagerLegacy {
   async getPack(name: string): Promise<OfflinePack | undefined> {
     await this._initialize();
     return this._offlinePacks[name];
+  }
+
+  /**
+   * Sets the maximum number of Mapbox-hosted tiles that may be downloaded and stored on the current device.
+   * The Mapbox Terms of Service prohibit changing or bypassing this limit without permission from Mapbox.
+   *
+   * @example
+   * Mapbox.offlineManagerLegacy.setTileCountLimit(1000);
+   *
+   * @param {Number} limit Map tile limit count.
+   * @return {void}
+   */
+  setTileCountLimit(limit: number): void {
+    MapboxOfflineManager.setTileCountLimit(limit);
   }
 
   async _initialize(forceInit?: boolean): Promise<boolean> {

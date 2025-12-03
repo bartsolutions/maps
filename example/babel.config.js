@@ -1,23 +1,32 @@
 const path = require('path');
 
-const pak = require('../package.json');
+const { getConfig } = require('react-native-builder-bob/babel-config');
 
-module.exports = function (api) {
-  api.cache(true);
+const pkg = require('../package.json');
 
-  return {
-    presets: ['@react-native/babel-preset'], //'babel-preset-expo'],
+const root = path.resolve(__dirname, '..');
+
+module.exports = getConfig(
+  {
+    presets: ['babel-preset-expo'],
     plugins: [
       [
-        'module-resolver',
+        'babel-plugin-react-compiler',
         {
-          extensions: ['.tsx', '.ts', '.js', '.json'],
-          alias: {
-            // For development, we want to alias the library to the source
-            [pak.name]: path.join(__dirname, '..', pak.source),
-          },
+          // Log what the compiler is doing (set to false to disable logging)
+          // When enabled, you'll see "React Compiler: compiled X functions" in Metro logs
+          compilationMode: 'infer', // 'annotation' | 'all' | 'infer'
+
+          /*
+            panicThreshold: 'all_errors', // Show all compilation errors/warnings
+            logger: {
+            logEvent(filename, event) {
+                console.log(`[React Compiler] ${filename}: ${event}`);
+            },
+          }*/
         },
       ],
     ],
-  };
-};
+  },
+  { root, pkg },
+);

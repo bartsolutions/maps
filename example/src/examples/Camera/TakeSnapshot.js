@@ -1,5 +1,5 @@
 import React from 'react';
-import MapboxGL from '@rnmapbox/maps';
+import { snapshotManager, StyleURL } from '@rnmapbox/maps';
 import {
   View,
   Image,
@@ -10,7 +10,6 @@ import {
 } from 'react-native';
 
 import BaseExamplePropTypes from '../common/BaseExamplePropTypes';
-import Page from '../common/Page';
 
 const styles = StyleSheet.create({
   container: {
@@ -43,14 +42,14 @@ class TakeSnapshot extends React.Component {
   async takeSnapshot() {
     const { width, height } = Dimensions.get('window');
 
-    const uri = await MapboxGL.snapshotManager.takeSnap({
+    const uri = await snapshotManager.takeSnap({
       centerCoordinate: [-74.12641, 40.797968],
       width,
       height,
       zoomLevel: 12,
       pitch: 30,
       heading: 20,
-      styleURL: MapboxGL.StyleURL.Dark,
+      styleURL: StyleURL.Dark,
       writeToDisk: true,
     });
 
@@ -79,7 +78,7 @@ class TakeSnapshot extends React.Component {
       );
     }
 
-    return <Page {...this.props}>{childView}</Page>;
+    return childView;
   }
 }
 

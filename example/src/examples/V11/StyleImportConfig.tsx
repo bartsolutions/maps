@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
 import { Button } from 'react-native';
-import { MapView, StyleImport, Camera } from '@rnmapbox/maps';
+import { useState } from 'react';
+import { MapView, Camera, StyleImport } from '@rnmapbox/maps';
 
 const StyleImportConfig = () => {
   const [lightPreset, setLightPreset] = useState('night');
@@ -42,12 +42,16 @@ const styles = {
 
 /* end-example-doc */
 
-StyleImportConfig.title = 'Style Import Config';
-StyleImportConfig.tags = ['StyleImport', 'v11'];
-StyleImportConfig.docs = `
+const metadata = {
+  title: 'Style Import Config',
+  tags: ['StyleImport', 'v11'],
+  docs: `
 # Style Import Config
 
 This example shows how to change style import configs - v11 only.
-`;
+`,
+};
+
+StyleImportConfig.metadata = metadata;
 
 export default StyleImportConfig;

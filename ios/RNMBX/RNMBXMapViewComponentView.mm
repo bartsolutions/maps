@@ -50,6 +50,7 @@ using namespace facebook::react;
     RNMBXMapView *_view;
     RNMBXMapViewEventDispatcher *_eventDispatcher;
     CGRect _frame;
+    id _lastStyleURL;
 }
 
 - (instancetype)initWithFrame:(CGRect)frame
@@ -67,13 +68,13 @@ using namespace facebook::react;
 {
     _eventDispatcher = [[RNMBXMapViewEventDispatcher alloc] initWithComponentView:self];
       _view =  [[RNMBXMapView alloc] initWithFrame:_frame eventDispatcher:_eventDispatcher];
-      
+
       // just need to pass something, it won't really be used on fabric, but it's used to create events (it won't impact sending them)
       _view.reactTag = @-1;
-      
+
       // capture weak self reference to prevent retain cycle
       __weak __typeof__(self) weakSelf = self;
-      
+
       [_view setReactOnPress:^(NSDictionary* event) {
           __typeof__(self) strongSelf = weakSelf;
 
@@ -135,7 +136,7 @@ using namespace facebook::react;
 {
     const auto &oldViewProps = static_cast<const RNMBXMapViewProps &>(*oldProps);
     const auto &newViewProps = static_cast<const RNMBXMapViewProps &>(*props);
-  
+
     RNMBX_REMAP_OPTIONAL_PROP_BOOL(attributionEnabled, reactAttributionEnabled)
 
     id attributionPosition = RNMBXConvertFollyDynamicToId(newViewProps.attributionPosition);
@@ -192,8 +193,15 @@ using namespace facebook::react;
     RNMBX_REMAP_OPTIONAL_PROP_BOOL(scrollEnabled, reactScrollEnabled)
 
     RNMBX_REMAP_OPTIONAL_PROP_BOOL(rotateEnabled, reactRotateEnabled)
-    
+
     RNMBX_REMAP_OPTIONAL_PROP_BOOL(pitchEnabled, reactPitchEnabled)
+  
+    RNMBX_REMAP_OPTIONAL_PROP_NSDictionary(gestureSettings, reactGestureSettings)
+
+    id preferredFramesPerSecond = RNMBXConvertFollyDynamicToId(newViewProps.preferredFramesPerSecond);
+    if (preferredFramesPerSecond != nil) {
+        _view.reactPreferredFramesPerSecond = [preferredFramesPerSecond integerValue];
+    }
 
     id projection = RNMBXConvertFollyDynamicToId(newViewProps.projection);
     if (projection != nil) {
@@ -204,12 +212,15 @@ using namespace facebook::react;
     if (localizeLabels != nil) {
         _view.reactLocalizeLabels = localizeLabels;
     }
-  
+
     RNMBX_OPTIONAL_PROP_BOOL(deselectAnnotationOnTap);
 
     id styleURL = RNMBXConvertFollyDynamicToId(newViewProps.styleURL);
     if (styleURL != nil) {
-        _view.reactStyleURL = styleURL;
+        if (_lastStyleURL == nil || ![_lastStyleURL isEqual:styleURL]) {
+            _view.reactStyleURL = styleURL;
+            _lastStyleURL = styleURL;
+        }
     }
 
   [super updateProps:props oldProps:oldProps];
@@ -220,6 +231,7 @@ using namespace facebook::react;
 - (void)prepareForRecycle
 {
     [super prepareForRecycle];
+    _lastStyleURL = nil;
     [self prepareView];
 }
 

@@ -11,7 +11,6 @@ package com.facebook.react.viewmanagers;
 
 import android.view.View;
 import com.facebook.react.bridge.Dynamic;
-
 public interface RNMBXCircleLayerManagerInterface<T extends View> {
   void setSourceID(T view, Dynamic value);
   void setExisting(T view, Dynamic value);

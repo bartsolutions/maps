@@ -12,10 +12,11 @@ package com.facebook.react.viewmanagers;
 import android.view.View;
 import androidx.annotation.Nullable;
 import com.facebook.react.bridge.DynamicFromObject;
+import com.facebook.react.uimanager.BaseViewManager;
 import com.facebook.react.uimanager.BaseViewManagerDelegate;
-import com.facebook.react.uimanager.BaseViewManagerInterface;
+import com.facebook.react.uimanager.LayoutShadowNode;
 
-public class RNMBXMapViewManagerDelegate<T extends View, U extends BaseViewManagerInterface<T> & RNMBXMapViewManagerInterface<T>> extends BaseViewManagerDelegate<T, U> {
+public class RNMBXMapViewManagerDelegate<T extends View, U extends BaseViewManager<T, ? extends LayoutShadowNode> & RNMBXMapViewManagerInterface<T>> extends BaseViewManagerDelegate<T, U> {
   public RNMBXMapViewManagerDelegate(U viewManager) {
     super(viewManager);
   }
@@ -105,6 +106,9 @@ public class RNMBXMapViewManagerDelegate<T extends View, U extends BaseViewManag
         break;
       case "mapViewImpl":
         mViewManager.setMapViewImpl(view, new DynamicFromObject(value));
+        break;
+      case "preferredFramesPerSecond":
+        mViewManager.setPreferredFramesPerSecond(view, new DynamicFromObject(value));
         break;
       default:
         super.setProperty(view, propName, value);

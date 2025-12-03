@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
 import { MapView, Camera, Images } from '@rnmapbox/maps';
-import { Button, StyleSheet, Text, ImageSourcePropType } from 'react-native';
+import { useState } from 'react';
+import { Button, ImageSourcePropType, StyleSheet, Text } from 'react-native';
 import { Divider } from '@rneui/base';
 
 import Bubble from '../common/Bubble';
@@ -38,8 +38,8 @@ type OrnamentButtonsProps = {
   visibility: Record<OrnamentType, true | false | undefined>;
   position: Record<OrnamentType, OrnamentPosition>;
   isMetricUnits?: boolean;
-  onPressVisibility: (ornamentType: OrnamentType) => void;
-  onPressPosition: (ornamentType: OrnamentType) => void;
+  onPressVisibility: (_ornamentType: OrnamentType) => void;
+  onPressPosition: (_ornamentType: OrnamentType) => void;
   onPressIsMetricUnits?: () => void;
 };
 
