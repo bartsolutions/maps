@@ -12,10 +12,7 @@ import com.mapbox.api.directions.v5.models.RouteOptions
 import com.mapbox.api.geocoding.v5.GeocodingCriteria
 import com.mapbox.api.geocoding.v5.MapboxGeocoding
 import com.mapbox.api.geocoding.v5.models.GeocodingResponse
-import com.mapbox.bindgen.Value
-import com.mapbox.common.TileDataDomain
 import com.mapbox.common.TileStore
-import com.mapbox.common.TileStoreOptions
 import com.mapbox.geojson.Feature
 import com.mapbox.geojson.FeatureCollection
 import com.mapbox.geojson.LineString
@@ -28,6 +25,7 @@ import com.mapbox.navigation.base.route.NavigationRouterCallback
 import com.mapbox.navigation.base.route.RouterFailure
 import com.mapbox.navigation.base.route.RouterOrigin
 import com.mapbox.navigation.core.MapboxNavigation
+import com.mapbox.navigation.core.MapboxNavigationProvider
 import com.rnmapbox.rnmbx.modules.RNMBXLocationModule
 import com.rnmapbox.rnmbx.modules.RNMBXModule
 import org.json.JSONException
@@ -55,19 +53,7 @@ class RNMBXNavigationModule private constructor(private val mReactContext: React
 
 
     private val tileStore: TileStore by lazy {
-        TileStore.create().also {
-            // Set default access token for the created tile store instance
-            it.setOption(
-                TileStoreOptions.MAPBOX_ACCESS_TOKEN,
-                TileDataDomain.MAPS,
-                Value(RNMBXModule.getAccessToken(mReactContext))
-            )
-            it.setOption(
-                TileStoreOptions.MAPBOX_ACCESS_TOKEN,
-                TileDataDomain.NAVIGATION,
-                Value(RNMBXModule.getAccessToken(mReactContext))
-            )
-        }
+        TileStore.create()
     }
 
      val mapboxNavigation: MapboxNavigation by lazy {
@@ -75,12 +61,11 @@ class RNMBXNavigationModule private constructor(private val mReactContext: React
             .tileStore(tileStore)
             .build()
 
-        var navOptions = NavigationOptions.Builder(mReactContext)
-            .accessToken(RNMBXModule.getAccessToken(mReactContext))
+        val navOptions = NavigationOptions.Builder(mReactContext)
             .routingTilesOptions(routingTilesOptions)
             .build()
 
-        MapboxNavigation(navOptions)
+        MapboxNavigationProvider.create(navOptions)
     }
 
     @ReactMethod
@@ -130,11 +115,13 @@ class RNMBXNavigationModule private constructor(private val mReactContext: React
         val waypoints = ArrayList<Point>()
 
         for (i in 0 until readableArray.size()) {
-            val coordinateArray: ReadableArray = readableArray.getArray(i)
-            val longitude = coordinateArray.getDouble(0)
-            val latitude = coordinateArray.getDouble(1)
-            val waypoint: Point = Point.fromLngLat(longitude, latitude)
-            waypoints.add(waypoint)
+            val coordinateArray: ReadableArray? = readableArray.getArray(i)
+            coordinateArray?.let {
+                val longitude = it.getDouble(0)
+                val latitude = it.getDouble(1)
+                val waypoint: Point = Point.fromLngLat(longitude, latitude)
+                waypoints.add(waypoint)
+            }
         }
         val routeOptions = RouteOptions.builder()
             .applyDefaultNavigationOptions()
@@ -145,7 +132,7 @@ class RNMBXNavigationModule private constructor(private val mReactContext: React
             mapboxNavigation.requestRoutes(
                 routeOptions,
                 object : NavigationRouterCallback {
-                    override fun onCanceled(routeOptions: RouteOptions, routerOrigin: RouterOrigin) {
+                    override fun onCanceled(routeOptions: RouteOptions, @RouterOrigin routerOrigin: String) {
                         // no impl
                     }
 
@@ -155,7 +142,7 @@ class RNMBXNavigationModule private constructor(private val mReactContext: React
 
                     override fun onRoutesReady(
                         routes: List<NavigationRoute>,
-                        routerOrigin: RouterOrigin
+                        @RouterOrigin routerOrigin: String
                     ) {
                         if (routes.isNotEmpty()) {
                             val route = routes[0] // 获取第一条路径

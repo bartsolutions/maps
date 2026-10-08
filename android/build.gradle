@@ -1,5 +1,5 @@
 def defaultMapboxMapsImpl = "mapbox"
-def defaultMapboxNavigationVersion = "2.21.0"
+def defaultMapboxNavigationVersion = "3.23.1"
 
 def getDefaultMapboxMapsVersion() {
     def packageJson = new groovy.json.JsonSlurper().parseText(
@@ -290,13 +290,15 @@ dependencies {
             // Mapbox Docs: https://docs.mapbox.com/android/maps/guides/#ndk-27
             if (targetSdk >= 35) {
                 implementation "com.mapbox.maps:android-ndk27:${mapboxVersion}"
-                implementation "com.mapbox.navigation:android-ndk27:${mapboxNavigationVersion}"
+                implementation "com.mapbox.navigationcore:navigation-ndk27:${mapboxNavigationVersion}"
             } else {
                 implementation "com.mapbox.maps:android:${mapboxVersion}"
-                implementation "com.mapbox.navigation:android:${mapboxNavigationVersion}"
+                implementation "com.mapbox.navigationcore:navigation:${mapboxNavigationVersion}"
             }
             
             implementation 'com.mapbox.mapboxsdk:mapbox-sdk-turf:6.11.0'
+            // Geocoding v5 wrapper used by RNMBXNavigationModule; Navigation SDK v3 only pulls it in at runtime
+            implementation 'com.mapbox.mapboxsdk:mapbox-sdk-services:7.10.0'
             implementation 'androidx.asynclayoutinflater:asynclayoutinflater:1.0.0'
         } else {
             msg = '@rnmapbox/maps: RNMapboxMapsImpl has invalid value - only mapbox supported - see https://github.com/rnmapbox/maps/wiki/Deprecated-RNMapboxImpl-Maplibre#android'

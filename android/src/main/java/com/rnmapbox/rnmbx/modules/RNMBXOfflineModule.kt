@@ -108,18 +108,7 @@ class RNMBXOfflineModule(private val mReactContext: ReactApplicationContext) :
 
 
     val tileStore: TileStore by lazy {
-        val result = TileStore.create().apply {
-            setOption(
-                TileStoreOptions.MAPBOX_ACCESS_TOKEN,
-                TileDataDomain.MAPS,
-                Value(RNMBXModule.getAccessToken(mReactContext))
-            )
-            setOption(
-                TileStoreOptions.MAPBOX_ACCESS_TOKEN,
-                TileDataDomain.NAVIGATION,
-                Value(RNMBXModule.getAccessToken(mReactContext))
-            )
-        }
+        val result = TileStore.create()
         result.setAccessToken(RNMBXModule.getAccessToken(mReactContext));
         result
     }

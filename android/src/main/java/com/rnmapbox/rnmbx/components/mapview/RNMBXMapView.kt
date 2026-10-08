@@ -67,6 +67,8 @@ import com.rnmapbox.rnmbx.components.images.ImageManager
 import com.rnmapbox.rnmbx.utils.extensions.toStringKeyPairs
 
 import com.rnmapbox.rnmbx.v11compat.event.*
+import com.rnmapbox.rnmbx.v11compat.feature.*
+import com.rnmapbox.rnmbx.v11compat.mapboxmap.*
 import com.rnmapbox.rnmbx.v11compat.ornamentsettings.*
 import org.json.JSONException
 import org.json.JSONObject
@@ -1265,18 +1267,20 @@ open class RNMBXMapView(private val mContext: Context, var mManager: RNMBXMapVie
             }
         }
         if (!created) {
-            var options = MapInitOptions(context = mContext)
-            val resourceOptions = ResourceOptionsManager
-                .getDefault(mContext)
-                .resourceOptions
-                .toBuilder()
-                .tileStoreUsageMode(TileStoreUsageMode.DISABLED)
-                .build()
+            var options: MapInitOptions? = null
             if (surfaceView == false) {
                 options = MapInitOptions(context = mContext, textureView = true)
             }
-            options.resourceOptions = resourceOptions
-            val mapView = if (options != null) MapView(mContext, options) else MapView(mContext)
+            // v11: tile store usage mode is a global option that Maps API objects read when constructed.
+            // Disable it only while this MapView is constructed, so OfflineManager / TileStore downloads
+            // created later (e.g. navigation tile packs) are not affected.
+            val previousTileStoreUsageMode = MapboxMapsOptions.tileStoreUsageMode
+            MapboxMapsOptions.tileStoreUsageMode = TileStoreUsageMode.DISABLED
+            val mapView = try {
+                if (options != null) MapView(mContext, options) else MapView(mContext)
+            } finally {
+                MapboxMapsOptions.tileStoreUsageMode = previousTileStoreUsageMode
+            }
             mMapView = mapView
 
             val matchParent = FrameLayout.LayoutParams(
