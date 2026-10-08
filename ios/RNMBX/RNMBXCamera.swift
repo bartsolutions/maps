@@ -2,14 +2,12 @@ import Foundation
 import MapboxMaps
 import Turf
 
-#if RNMBX_11
 extension NSNumber {
   /// Converts an `NSNumber` to a `CGFloat` value from its `Double` representation.
   internal var CGFloat: CGFloat {
     CoreGraphics.CGFloat(doubleValue)
   }
 }
-#endif
 
 public enum RemovalReason {
     case ViewRemoval, StyleChange, OnDestroy, ComponentChange, Reorder
@@ -78,6 +76,13 @@ struct CameraUpdateItem {
     logged("CameraUpdateItem.execute") {
       if let center = camera.center {
         try center.validate()
+      }
+
+      // Mapbox cancels camera animations immediately while the map view has no window
+      // (e.g. an inactive navigator screen), so jump to the target instead of dropping it.
+      if map.mapView.window == nil {
+        map.mapboxMap.setCamera(to: camera)
+        return
       }
 
       switch mode {
@@ -333,8 +338,9 @@ open class RNMBXCamera : RNMBXMapAndMapViewComponentBase {
   
   func _updateMaxBounds() {
     withMapView { map in
+      let current = map.mapboxMap.cameraBounds
       var options = CameraBoundsOptions()
-      
+
       if let maxBounds = self.maxBoundsFeature {
         logged("RNMBXCamera._updateMaxBounds._toCoordinateBounds") {
           options.bounds = try self._toCoordinateBounds(maxBounds)
@@ -344,7 +350,9 @@ open class RNMBXCamera : RNMBXMapAndMapViewComponentBase {
       }
       options.minZoom = self.minZoomLevel?.CGFloat
       options.maxZoom = self.maxZoomLevel?.CGFloat
-      
+      options.minPitch = current.minPitch
+      options.maxPitch = current.maxPitch
+
       logged("RNMBXCamera._updateMaxBounds") {
         try map.mapboxMap.setCameraBounds(with: options)
       }
@@ -368,9 +376,6 @@ open class RNMBXCamera : RNMBXMapAndMapViewComponentBase {
       if let locationModule = RNMBXLocationModule.shared {
         locationModule.override(for: map.location)
       }
-      #if !RNMBX_11
-      map.location.locationProvider.requestWhenInUseAuthorization()
-      #endif
       var trackingModeChanged = false
       var followOptions = FollowPuckViewportStateOptions()
       switch userTrackingMode {
@@ -518,11 +523,7 @@ open class RNMBXCamera : RNMBXMapAndMapViewComponentBase {
       }
       
       withMapView { map in
-        #if RNMBX_11
         let bounds = [sw, ne]
-        #else
-        let bounds = CoordinateBounds(southwest: sw, northeast: ne)
-        #endif
 
         camera = map.mapboxMap.camera(
           for: bounds,
@@ -604,14 +605,14 @@ open class RNMBXCamera : RNMBXMapAndMapViewComponentBase {
     return super.removeFromMap(map, mapView: mapView, reason: reason)
   }
 
-  @objc public func moveBy(x: Double, y: Double, animationMode: NSNumber?, animationDuration: NSNumber?, resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
+  @objc public func moveBy(x: Double, y: Double, animationMode: Double, animationDuration: Double, resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
     withMapView { mapView in
       let contentFrame = mapView.bounds.inset(by: mapView.safeAreaInsets)
       let centerPoint = CGPoint(x: contentFrame.midX, y: contentFrame.midY)
       let endCameraPoint = CGPoint(x: centerPoint.x + x, y: centerPoint.y + y)
       let cameraOptions = mapView.mapboxMap.dragCameraOptions(from: centerPoint, to: endCameraPoint)
       
-      let duration = (animationDuration?.doubleValue ?? 0.0) / 1000
+      let duration = animationDuration / 1000
 
       if (duration == 0.0) {
         mapView.mapboxMap.setCamera(to: cameraOptions)
@@ -620,7 +621,7 @@ open class RNMBXCamera : RNMBXMapAndMapViewComponentBase {
       }
         
       var curve: UIView.AnimationCurve = .linear
-      if let m = animationMode?.intValue, let m = CameraMode(rawValue: m) {
+      if let m = CameraMode(rawValue: Int(animationMode)) {
           curve = m == CameraMode.ease ? .easeInOut : .linear
       }
 
@@ -631,18 +632,18 @@ open class RNMBXCamera : RNMBXMapAndMapViewComponentBase {
   @objc public func scaleBy(
     x: Double,
     y: Double,
-    scaleFactor: NSNumber,
-    animationMode: NSNumber?,
-    animationDuration: NSNumber?,
+    scaleFactor: Double,
+    animationMode: Double,
+    animationDuration: Double,
     resolve: @escaping RCTPromiseResolveBlock,
     reject: @escaping RCTPromiseRejectBlock
   ) {
     withMapView { mapView in
       let currentZoom = mapView.cameraState.zoom
-      let newZoom = currentZoom + log2(scaleFactor.doubleValue)
+      let newZoom = currentZoom + log2(scaleFactor)
       let anchor = CGPoint(x: x, y: y)
       let cameraOptions = CameraOptions(anchor: anchor, zoom: newZoom)
-      let duration = (animationDuration?.doubleValue ?? 0.0) / 1000
+      let duration = animationDuration / 1000
         
       if (duration == 0.0) {
         mapView.mapboxMap.setCamera(to: cameraOptions)
@@ -651,7 +652,7 @@ open class RNMBXCamera : RNMBXMapAndMapViewComponentBase {
       }
         
       var curve: UIView.AnimationCurve = .linear
-      if let m = animationMode?.intValue, let m = CameraMode(rawValue: m) {
+      if let m = CameraMode(rawValue: Int(animationMode)) {
           curve = m == CameraMode.ease ? .easeInOut : .linear
       }
 

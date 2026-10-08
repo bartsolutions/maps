@@ -1,4 +1,4 @@
-import { ConfigPlugin } from 'expo/config-plugins';
+import { type ConfigPlugin } from 'expo/config-plugins';
 type InstallerBlockName = 'pre' | 'post';
 export type MapboxPlugProps = {
     /**
@@ -6,6 +6,9 @@ export type MapboxPlugProps = {
      */
     RNMapboxMapsImpl?: 'mapbox';
     RNMapboxMapsVersion?: string;
+    /**
+     * @deprecated Download token is no longer required by Mapbox. Do not set this.
+     */
     RNMapboxMapsDownloadToken?: string;
     RNMapboxMapsUseV11?: boolean;
 };

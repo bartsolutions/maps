@@ -1,10 +1,5 @@
 @_spi(Experimental) import MapboxMaps
 
-#if RNMBX_11
-#else
-typealias ViewportManager = Viewport
-#endif
-
 @objc(RNMBXViewport)
 open class RNMBXViewport : UIView, RNMBXMapAndMapViewComponent, ViewportStatusObserver {
   var mapView: MapView? = nil
@@ -131,7 +126,7 @@ open class RNMBXViewport : UIView, RNMBXMapAndMapViewComponent, ViewportStatusOb
     }
   }
   
-  func getState() -> [String:Any] {
+  @objc public func getState() -> [String:Any] {
     guard let mapView = mapView else {
       Logger.log(level:.error, message: "mapView is null in RNMBXViewport.getState")
       return [:]
@@ -139,7 +134,7 @@ open class RNMBXViewport : UIView, RNMBXMapAndMapViewComponent, ViewportStatusOb
     return statusToMap(mapView.viewport.status)
   }
   
-  func idle() {
+  @objc public func idle() {
     guard let mapView = mapView else {
       Logger.log(level:.error, message: "mapView is null in RNMBXViewport.idle")
       return
@@ -279,11 +274,8 @@ open class RNMBXViewport : UIView, RNMBXMapAndMapViewComponent, ViewportStatusOb
       Logger.log(level:.error, message: "no viewport")
       return nil
     }
-    guard let kind = from["kind"] as? String else {
-      Logger.log(level:.error, message: "no kind found in state")
-      return nil
-    }
-    
+    let kind = from["kind"] as? String ?? "default"
+
     switch (kind) {
     case "immediate":
       return viewport.makeImmediateViewportTransition()
@@ -295,14 +287,14 @@ open class RNMBXViewport : UIView, RNMBXMapAndMapViewComponent, ViewportStatusOb
       return viewport.makeDefaultViewportTransition(
         options: options
       )
-        
+
     default:
       Logger.log(level:.error, message: "unexpected transition kind: \(kind)")
       return nil
     }
   }
   
-  func transitionTo(
+  @objc public func transitionTo(
     state: [String: Any],
     transition: [String: Any],
     resolve: @escaping (NSNumber) -> Void
