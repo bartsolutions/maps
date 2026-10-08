@@ -72,14 +72,19 @@ class RNMBXNavigationModule private constructor(private val mReactContext: React
     @Throws(JSONException::class)
     fun geocoding(point: ReadableArray, language: String, promise: Promise)
     {
-        val longitude = point.getDouble(0)
-        val latitude = point.getDouble(1)
-        var reverseGeocode = MapboxGeocoding.builder()
-            .accessToken(RNMBXModule.getAccessToken(mReactContext))
-            .query(Point.fromLngLat(longitude, latitude))
-            .geocodingTypes(GeocodingCriteria.TYPE_POI_LANDMARK)
-            .languages(language)
-            .build()
+        val reverseGeocode = try {
+            val longitude = point.getDouble(0)
+            val latitude = point.getDouble(1)
+            MapboxGeocoding.builder()
+                .accessToken(RNMBXModule.getAccessToken(mReactContext))
+                .query(Point.fromLngLat(longitude, latitude))
+                .geocodingTypes(GeocodingCriteria.TYPE_POI_LANDMARK)
+                .languages(language)
+                .build()
+        } catch (e: Throwable) {
+            promise.reject("ERROR", e)
+            return
+        }
 
         reverseGeocode.enqueueCall(object : Callback<GeocodingResponse> {
             override fun onResponse(call: Call<GeocodingResponse>, response: Response<GeocodingResponse>) {
@@ -97,6 +102,8 @@ class RNMBXNavigationModule private constructor(private val mReactContext: React
                     val result = Arguments.createMap()
                     result.putString("geoJson", featureCollection.toJson())
                     promise.resolve(result)
+                } else {
+                    promise.reject("ERROR", "Geocoding request failed: HTTP ${response.code()} ${response.message()}")
                 }
             }
 
@@ -123,30 +130,30 @@ class RNMBXNavigationModule private constructor(private val mReactContext: React
                 waypoints.add(waypoint)
             }
         }
-        val routeOptions = RouteOptions.builder()
-            .applyDefaultNavigationOptions()
-            .coordinatesList(waypoints)
-            .profile(DirectionsCriteria.PROFILE_WALKING)
-            .build()
         try {
+            val routeOptions = RouteOptions.builder()
+                .applyDefaultNavigationOptions()
+                .coordinatesList(waypoints)
+                .profile(DirectionsCriteria.PROFILE_WALKING)
+                .build()
             mapboxNavigation.requestRoutes(
                 routeOptions,
                 object : NavigationRouterCallback {
                     override fun onCanceled(routeOptions: RouteOptions, @RouterOrigin routerOrigin: String) {
-                        // no impl
+                        promise.reject("ERROR", "Route request canceled")
                     }
 
                     override fun onFailure(reasons: List<RouterFailure>, routeOptions: RouteOptions) {
-                        // no impl
+                        promise.reject("ERROR", "Route request failed: " + reasons.joinToString("; ") { it.message })
                     }
 
                     override fun onRoutesReady(
                         routes: List<NavigationRoute>,
                         @RouterOrigin routerOrigin: String
                     ) {
-                        if (routes.isNotEmpty()) {
-                            val route = routes[0] // 获取第一条路径
-                            val lineString = LineString.fromPolyline(route.directionsRoute.geometry()!!, 6)
+                        val geometry = routes.firstOrNull()?.directionsRoute?.geometry() // 获取第一条路径
+                        if (geometry != null) {
+                            val lineString = LineString.fromPolyline(geometry, 6)
 
                             // 将路径的 GeoJSON 数据返回给你的逻辑
                             val featureCollection = FeatureCollection.fromFeatures(
