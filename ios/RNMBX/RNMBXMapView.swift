@@ -840,7 +840,6 @@ open class RNMBXMapView: UIView, RCTInvalidating {
   }
 
   var scaleBarEnabled: Bool? = nil
-  var scaleBarIsMetricUnits: Bool? = nil
   var scaleBarPosition: OrnamentPosition? = nil
   var scaleBarMargins: CGPoint? = nil
   var scaleBarUnits: String? = nil
@@ -850,11 +849,6 @@ open class RNMBXMapView: UIView, RCTInvalidating {
     changed(.scaleBar)
   }
 
-  @objc public func setReactScaleBarIsMetricUnits(_ value: Bool) {
-    scaleBarIsMetricUnits = value
-    changed(.scaleBar)
-  }
-  
   @objc public func setReactScaleBarPosition(_ position: [String: NSNumber]) {
     if let ornamentOptions = self.getOrnamentOptionsFromPosition(position) {
       scaleBarPosition = ornamentOptions.position
@@ -871,11 +865,6 @@ open class RNMBXMapView: UIView, RCTInvalidating {
     if let enabled = scaleBarEnabled {
       mapView.ornaments.options.scaleBar.visibility = enabled ? .visible : .hidden
     }
-      
-    if let useMetricUnits = scaleBarIsMetricUnits {
-      mapView.ornaments.options.scaleBar.useMetricUnits = useMetricUnits
-    }
-      
     if let position = scaleBarPosition {
       mapView.ornaments.options.scaleBar.position = position
     }

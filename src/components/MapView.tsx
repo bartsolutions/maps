@@ -285,12 +285,6 @@ type Props = ViewProps & {
   scaleBarEnabled?: boolean;
 
   /**
-   * [`mapbox` (v10) implementation only] Whether the scale bar is using metric unit. 
-   * True if the scale bar is using metric system, false if the scale bar is using imperial units. 
-   */
-  scaleBarIsMetricUnits?: boolean;
-
-  /**
    * [`mapbox` (v10) implementation only] Adds scale bar offset, e.g. `{top: 8, left: 8}` will put the scale bar in top-left corner of the map
    */
   scaleBarPosition?: OrnamentPositonProp;
@@ -509,7 +503,6 @@ class MapView extends NativeBridgeComponent(
     compassFadeWhenNorth: false,
     logoEnabled: true,
     scaleBarEnabled: true,
-    scaleBarIsMetricUnits: false,
     surfaceView: true,
     requestDisallowInterceptTouchEvent: false,
     regionWillChangeDebounceTime: 10,

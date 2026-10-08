@@ -1415,17 +1415,13 @@ open class RNMBXMapView(private val mContext: Context, var mManager: RNMBXMapVie
     }
 
     var mScaleBarSettings = OrnamentSettings(enabled = false)
-    var mScaleBarIsMetricUnits = false
     var mScaleBarUnits: String? = null
 
     fun setReactScaleBarEnabled(scaleBarEnabled: Boolean) {
         mScaleBarSettings.enabled = scaleBarEnabled
         changes.add(Property.SCALEBAR)
     }
-    fun setReactScaleBarIsMetricUnits(isMetricUnits: Boolean) {
-        mScaleBarIsMetricUnits = isMetricUnits
-        changes.add(Property.SCALEBAR)
-    }
+
     fun setReactScaleBarViewMargins(scaleBarMargins: ReadableMap) {
         mScaleBarSettings.margins = scaleBarMargins
         changes.add(Property.SCALEBAR)
@@ -1448,7 +1444,6 @@ open class RNMBXMapView(private val mContext: Context, var mManager: RNMBXMapVie
 
     private fun applyScaleBar() {
         mapView.scalebar.updateSettings {
-            isMetricUnits = mScaleBarIsMetricUnits
             updateOrnament("scaleBar", mScaleBarSettings, this.toGenericOrnamentSettings())
             mScaleBarUnits?.let { units ->
                 distanceUnits = when (units) {
