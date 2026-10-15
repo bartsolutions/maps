@@ -1,5 +1,5 @@
 def defaultMapboxMapsImpl = "mapbox"
-def defaultMapboxNavigationVersion = "3.23.1"
+def defaultMapboxNavigationVersion = "3.32.1"
 
 def getDefaultMapboxMapsVersion() {
     def packageJson = new groovy.json.JsonSlurper().parseText(
