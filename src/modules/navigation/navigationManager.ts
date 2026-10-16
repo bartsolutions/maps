@@ -2,6 +2,19 @@ import { NativeModules, Platform } from 'react-native';
 
 const {  RNMBXNavigationModule } = NativeModules;
 
+export type RoutingTilesStatus = {
+  /** downloading, complete, incomplete, failed, or none when there are no routing tiles of the pinned version */
+  state: 'downloading' | 'complete' | 'incomplete' | 'failed' | 'none';
+  /** Routing tiles version the router is pinned to, null when unpinned */
+  version: string | null;
+  /** Version being downloaded, when state is downloading */
+  downloadingVersion?: string;
+  completedResourceCount: number;
+  requiredResourceCount: number;
+  percentage: number;
+  error?: string;
+};
+
 /**
  * NavigationManager implements a asynchronous calculateRoute method to find best route between
  * Origin an Destination Point. Will use tile store when offline.
@@ -69,6 +82,61 @@ class NavigationManager {
       await RNMBXNavigationModule.calculateRoute(points);
     const geoJson: GeoJSON.FeatureCollection = JSON.parse(jsonPayload);
     return geoJson;
+  }
+
+  /**
+   * Downloads the latest routing tiles for offline routing within bounds. Once complete, the router
+   * is pinned to the downloaded version and routing tiles of other versions are removed, so the old
+   * tiles stay usable offline until then.
+   *
+   * @example
+   *
+   * const version = await Mapbox.navigationManager.downloadRoutingTiles('routing-tiles', [[114.5, 22.6], [113.8, 22.1]])
+   *
+   * @param  {string} regionId  Tile region id prefix; regions are named `${regionId}@${version}`.
+   * @param  {GeoJSON.Position[]} bounds  Two opposite corners as [longitude, latitude].
+   * @return {string} Downloaded routing tiles version
+   */
+  async downloadRoutingTiles(
+    regionId: string,
+    bounds: [GeoJSON.Position, GeoJSON.Position],
+  ): Promise<string | null> {
+    if (Platform.OS !== 'android') {
+      console.warn('downloadRoutingTiles only support Android');
+      return null;
+    }
+    return RNMBXNavigationModule.downloadRoutingTiles(regionId, bounds);
+  }
+
+  /**
+   * Status of the routing tiles downloaded by downloadRoutingTiles for regionId.
+   *
+   * @param  {string} regionId  Tile region id prefix passed to downloadRoutingTiles.
+   * @return {RoutingTilesStatus}
+   */
+  async getRoutingTilesStatus(
+    regionId: string,
+  ): Promise<RoutingTilesStatus | null> {
+    if (Platform.OS !== 'android') {
+      return null;
+    }
+    return RNMBXNavigationModule.getRoutingTilesStatus(regionId);
+  }
+
+  /**
+   * Pins the router to the routing tiles version of an existing tile region, e.g. an offline pack
+   * created by an older app version, so offline routing keeps using those tiles. Needs network.
+   *
+   * @param  {string} regionId  Tile region id.
+   * @return {string} Pinned routing tiles version
+   */
+  async pinRoutingTilesVersionOfRegion(
+    regionId: string,
+  ): Promise<string | null> {
+    if (Platform.OS !== 'android') {
+      return null;
+    }
+    return RNMBXNavigationModule.pinRoutingTilesVersionOfRegion(regionId);
   }
 
   async _initialize(): Promise<boolean> {

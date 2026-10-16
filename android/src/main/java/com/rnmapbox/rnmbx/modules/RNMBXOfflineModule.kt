@@ -297,11 +297,9 @@ class RNMBXOfflineModule(private val mReactContext: ReactApplicationContext) :
                 maxZoom = zoomRange.maxZoom,
                 stylePackOptions = stylePackOptions,
                 tilesets = pack.tilesets)
-            val mapboxNavigation = RNMBXNavigationModule.getInstance(mReactContext).mapboxNavigation
-            val navTilesetDescriptor = mapboxNavigation.tilesetDescriptorFactory.getLatest()
             val loadOptions = TileRegionLoadOptions.Builder()
                 .geometry(bounds)
-                .descriptors(descriptors + navTilesetDescriptor)
+                .descriptors(descriptors)
                 .metadata(metadata.toMapboxValue())
                 .acceptExpired(true)
                 .networkRestriction(NetworkRestriction.NONE)
