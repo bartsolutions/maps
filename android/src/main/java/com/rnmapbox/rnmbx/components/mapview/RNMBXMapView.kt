@@ -13,7 +13,6 @@ import androidx.lifecycle.Lifecycle
 import com.facebook.react.bridge.*
 import com.mapbox.android.gestures.*
 import com.mapbox.bindgen.Value
-import com.mapbox.common.TileStore
 import com.mapbox.geojson.Feature
 import com.mapbox.geojson.FeatureCollection
 import com.mapbox.geojson.Point
@@ -1215,10 +1214,6 @@ open class RNMBXMapView(private val mContext: Context, var mManager: RNMBXMapVie
         }
     }
 
-    private val tileStore: TileStore by lazy {
-        TileStore.create("empty")
-    }
-
     fun setSourceVisibility(
         visible: Boolean,
         sourceId: String,
@@ -1271,16 +1266,7 @@ open class RNMBXMapView(private val mContext: Context, var mManager: RNMBXMapVie
             if (surfaceView == false) {
                 options = MapInitOptions(context = mContext, textureView = true)
             }
-            // v11: tile store usage mode is a global option that Maps API objects read when constructed.
-            // Disable it only while this MapView is constructed, so OfflineManager / TileStore downloads
-            // created later (e.g. navigation tile packs) are not affected.
-            val previousTileStoreUsageMode = MapboxMapsOptions.tileStoreUsageMode
-            MapboxMapsOptions.tileStoreUsageMode = TileStoreUsageMode.DISABLED
-            val mapView = try {
-                if (options != null) MapView(mContext, options) else MapView(mContext)
-            } finally {
-                MapboxMapsOptions.tileStoreUsageMode = previousTileStoreUsageMode
-            }
+            val mapView = if (options != null) MapView(mContext, options) else MapView(mContext)
             mMapView = mapView
 
             val matchParent = FrameLayout.LayoutParams(
