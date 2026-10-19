@@ -152,13 +152,14 @@ class RNMBXNavigationModule private constructor(private val mReactContext: React
     }
 
     /**
-     * Downloads the latest routing tiles for bounds ([[lng, lat], [lng, lat]]) into the tile region
-     * "<regionId>@<version>". Once complete, the router is pinned to that version and the routing
-     * tiles of other versions are removed, so the old tiles stay usable offline during the download.
-     * Resolves with the version.
+     * Downloads routing tiles for bounds ([[lng, lat], [lng, lat]]) into the tile region
+     * "<regionId>@<version>": the given version, or the latest one when version is null. Tiles of that
+     * version already in the tile store are reused. Once complete, the router is pinned to that
+     * version and the routing tiles of other versions are removed, so the old tiles stay usable
+     * offline during the download. Resolves with the version.
      */
     @ReactMethod
-    fun downloadRoutingTiles(regionId: String, bounds: ReadableArray, promise: Promise) {
+    fun downloadRoutingTiles(regionId: String, bounds: ReadableArray, version: String?, promise: Promise) {
         val geometry = try {
             boundsToPolygon(bounds)
         } catch (e: Throwable) {
@@ -169,46 +170,54 @@ class RNMBXNavigationModule private constructor(private val mReactContext: React
             promise.reject("ERROR", "Routing tiles for $regionId are already downloading")
             return
         }
+        if (version != null) {
+            loadRoutingTiles(regionId, geometry, version, promise)
+            return
+        }
         getLatestTilesVersion { result ->
-            val version = result.getOrElse {
+            result.onSuccess {
+                loadRoutingTiles(regionId, geometry, it, promise)
+            }.onFailure {
                 failures[regionId] = it.message ?: it.toString()
                 promise.reject("ERROR", it)
-                return@getLatestTilesVersion
             }
-            val download = RoutingTilesDownload(version)
-            if (downloads.putIfAbsent(regionId, download) != null) {
-                promise.reject("ERROR", "Routing tiles for $regionId are already downloading")
-                return@getLatestTilesVersion
-            }
-            failures.remove(regionId)
-            val id = tileRegionId(regionId, version)
-            Logger.i(LOG_TAG, "Downloading routing tiles $id")
-            val loadOptions = TileRegionLoadOptions.Builder()
-                .geometry(geometry)
-                .descriptors(listOf(mapboxNavigation.tilesetDescriptorFactory.getSpecificVersion(version)))
-                // RNMBXOfflineModule.getPacks crashes on tile regions without metadata
-                .metadata(Value.valueOf(hashMapOf("name" to Value(id), "routingTilesVersion" to Value(version))))
-                .acceptExpired(true)
-                .networkRestriction(NetworkRestriction.NONE)
-                .build()
-            tileStore.loadTileRegion(id, loadOptions, { progress ->
-                download.progress = progress
-            }, { expected ->
-                downloads.remove(regionId)
-                val region = expected.value
-                if (region != null) {
-                    Logger.i(LOG_TAG, "Downloaded routing tiles $id: ${region.completedResourceCount} resources, ${region.completedResourceSize} bytes")
-                    pinTilesVersion(version)
-                    removeOtherRoutingTiles(regionId, keep = id)
-                    promise.resolve(version)
-                } else {
-                    val message = expected.error?.let { "${it.type}: ${it.message}" } ?: "unknown error"
-                    Logger.w(LOG_TAG, "Downloading routing tiles $id failed: $message")
-                    failures[regionId] = message
-                    promise.reject("ERROR", "Downloading routing tiles failed: $message")
-                }
-            })
         }
+    }
+
+    private fun loadRoutingTiles(regionId: String, geometry: Polygon, version: String, promise: Promise) {
+        val download = RoutingTilesDownload(version)
+        if (downloads.putIfAbsent(regionId, download) != null) {
+            promise.reject("ERROR", "Routing tiles for $regionId are already downloading")
+            return
+        }
+        failures.remove(regionId)
+        val id = tileRegionId(regionId, version)
+        Logger.i(LOG_TAG, "Downloading routing tiles $id")
+        val loadOptions = TileRegionLoadOptions.Builder()
+            .geometry(geometry)
+            .descriptors(listOf(mapboxNavigation.tilesetDescriptorFactory.getSpecificVersion(version)))
+            // RNMBXOfflineModule.getPacks crashes on tile regions without metadata
+            .metadata(Value.valueOf(hashMapOf("name" to Value(id), "routingTilesVersion" to Value(version))))
+            .acceptExpired(true)
+            .networkRestriction(NetworkRestriction.NONE)
+            .build()
+        tileStore.loadTileRegion(id, loadOptions, { progress ->
+            download.progress = progress
+        }, { expected ->
+            downloads.remove(regionId)
+            val region = expected.value
+            if (region != null) {
+                Logger.i(LOG_TAG, "Downloaded routing tiles $id: ${region.completedResourceCount} resources, ${region.completedResourceSize} bytes")
+                pinTilesVersion(version)
+                removeOtherRoutingTiles(regionId, keep = id)
+                promise.resolve(version)
+            } else {
+                val message = expected.error?.let { "${it.type}: ${it.message}" } ?: "unknown error"
+                Logger.w(LOG_TAG, "Downloading routing tiles $id failed: $message")
+                failures[regionId] = message
+                promise.reject("ERROR", "Downloading routing tiles failed: $message")
+            }
+        })
     }
 
     /**

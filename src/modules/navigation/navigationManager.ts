@@ -85,9 +85,10 @@ class NavigationManager {
   }
 
   /**
-   * Downloads the latest routing tiles for offline routing within bounds. Once complete, the router
-   * is pinned to the downloaded version and routing tiles of other versions are removed, so the old
-   * tiles stay usable offline until then.
+   * Downloads routing tiles for offline routing within bounds: the given version, or the latest one.
+   * Tiles of that version already on the device are reused. Once complete, the router is pinned to
+   * the downloaded version and routing tiles of other versions are removed, so the old tiles stay
+   * usable offline until then.
    *
    * @example
    *
@@ -95,17 +96,23 @@ class NavigationManager {
    *
    * @param  {string} regionId  Tile region id prefix; regions are named `${regionId}@${version}`.
    * @param  {GeoJSON.Position[]} bounds  Two opposite corners as [longitude, latitude].
+   * @param  {string} version  Routing tiles version to download, the latest one when omitted.
    * @return {string} Downloaded routing tiles version
    */
   async downloadRoutingTiles(
     regionId: string,
     bounds: [GeoJSON.Position, GeoJSON.Position],
+    version?: string,
   ): Promise<string | null> {
     if (Platform.OS !== 'android') {
       console.warn('downloadRoutingTiles only support Android');
       return null;
     }
-    return RNMBXNavigationModule.downloadRoutingTiles(regionId, bounds);
+    return RNMBXNavigationModule.downloadRoutingTiles(
+      regionId,
+      bounds,
+      version ?? null,
+    );
   }
 
   /**
