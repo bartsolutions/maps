@@ -273,22 +273,19 @@ class RNMBXNavigationModule private constructor(private val mReactContext: React
     }
 
     /**
-     * Pins the router to the routing tiles version of an existing tile region, e.g. a pack created by
-     * an older app version. Needs network. Resolves with the version.
+     * The routing tiles version of an existing tile region, e.g. a pack created by an older app
+     * version. Needs network. Resolves with the version.
      */
     @ReactMethod
     @OptIn(ExperimentalPreviewMapboxNavigationAPI::class)
-    fun pinRoutingTilesVersionOfRegion(regionId: String, promise: Promise) {
+    fun getRoutingTilesVersionOfRegion(regionId: String, promise: Promise) {
         mapboxNavigation.tilesetVersionManager.getAvailableUpdate(regionId, object : TilesetVersionManager.TilesetUpdatesCallback {
             override fun onUpdatesResult(result: Expected<Throwable, TilesetUpdateAvailabilityResult>) {
                 when (val value = result.value) {
-                    is TilesetUpdateAvailabilityResult.Available -> {
-                        pinTilesVersion(value.currentVersion)
-                        promise.resolve(value.currentVersion)
-                    }
+                    is TilesetUpdateAvailabilityResult.Available -> promise.resolve(value.currentVersion)
+                    // the region has the latest version
                     is TilesetUpdateAvailabilityResult.NoUpdates -> getLatestTilesVersion { latest ->
                         latest.onSuccess {
-                            pinTilesVersion(it)
                             promise.resolve(it)
                         }.onFailure {
                             promise.reject("ERROR", it)

@@ -131,19 +131,20 @@ class NavigationManager {
   }
 
   /**
-   * Pins the router to the routing tiles version of an existing tile region, e.g. an offline pack
-   * created by an older app version, so offline routing keeps using those tiles. Needs network.
+   * The routing tiles version of an existing tile region, e.g. an offline pack created by an older
+   * app version. Passing it to downloadRoutingTiles moves those routing tiles to the routing tiles
+   * region without downloading them again. Needs network.
    *
    * @param  {string} regionId  Tile region id.
-   * @return {string} Pinned routing tiles version
+   * @return {string} Routing tiles version
    */
-  async pinRoutingTilesVersionOfRegion(
+  async getRoutingTilesVersionOfRegion(
     regionId: string,
   ): Promise<string | null> {
     if (Platform.OS !== 'android') {
       return null;
     }
-    return RNMBXNavigationModule.pinRoutingTilesVersionOfRegion(regionId);
+    return RNMBXNavigationModule.getRoutingTilesVersionOfRegion(regionId);
   }
 
   async _initialize(): Promise<boolean> {
