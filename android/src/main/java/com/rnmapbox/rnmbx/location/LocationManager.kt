@@ -10,6 +10,7 @@ import com.mapbox.geojson.Point
 import com.mapbox.maps.plugin.locationcomponent.LocationProvider
 import java.lang.ref.WeakReference
 import java.util.ArrayList
+import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.Exception
 
 import com.rnmapbox.rnmbx.v11compat.location.*
@@ -93,7 +94,8 @@ internal class LocationProviderForEngine(var mEngine: LocationEngine?, val conte
 class LocationManager private constructor(private val context: Context) : LocationEngineCallback {
     var engine: LocationEngine? = null
         private set
-    private val listeners: MutableList<OnUserLocationChange> = ArrayList()
+    // Modules add and remove listeners off the main thread while updates iterate on it
+    private val listeners: MutableList<OnUserLocationChange> = CopyOnWriteArrayList()
     private var mMinDisplacement = 0f
     private var isActive = false
     private var lastLocation: Location? = null

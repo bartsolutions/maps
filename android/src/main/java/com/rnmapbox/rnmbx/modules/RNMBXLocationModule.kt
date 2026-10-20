@@ -100,6 +100,14 @@ class RNMBXLocationModule(reactContext: ReactApplicationContext) :
         stopLocationManager()
     }
 
+    // A bridgeless reload invalidates this module without stop() or onHostDestroy. LocationManager
+    // outlives it, so the callback would keep emitting into the destroyed JS runtime and crash.
+    override fun invalidate() {
+        reactApplicationContext.removeLifecycleEventListener(lifecycleEventListener)
+        stopLocationManager()
+        super.invalidate()
+    }
+
     @ReactMethod
     override fun getLastKnownLocation(promise: Promise) {
         locationManager!!.getLastKnownLocation(
